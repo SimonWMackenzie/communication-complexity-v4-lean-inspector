@@ -20,6 +20,7 @@ async function checkPaperGeometry(page,label){
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:8764/',{waitUntil:'load',timeout:120000});
   await page.waitForFunction(()=>window.V4Graph&&window.V4Trace,null,{timeout:120000});
+  await page.locator('#open-paper-trace').click(); await page.waitForFunction(()=>document.querySelector('.paper-highlight.selected'));
   check('paper opens without fatal errors',!(await page.locator('#fatal').isVisible()));
   check('reader main theorem is on its actual PDF page',(await page.locator('#trace-page').inputValue())==='2');
   check('selected paper highlight is in the reading viewport',await page.evaluate(()=>{const h=document.querySelector('.paper-highlight.selected').getBoundingClientRect(),f=document.getElementById('paper-scroll').getBoundingClientRect();return h.top>=f.top&&h.bottom<=f.bottom;}));
@@ -65,7 +66,7 @@ async function checkPaperGeometry(page,label){
   await page.keyboard.press('Escape');
   await page.locator('#paper-detail').getByRole('button',{name:'Statement',exact:true}).first().click();
   check('paper opens Lean',await page.locator('#workspace').isVisible());
-  check('selected Lean navigation has readable contrast',await page.locator('.decl-row[aria-current=true]').evaluate(e=>{const s=getComputedStyle(e);return s.backgroundColor==='rgb(231, 239, 249)'&&s.color==='rgb(23, 44, 67)';}));
+  check('selected Lean navigation has readable contrast',await page.locator('.decl-row[aria-current=true]').evaluate(e=>{const s=getComputedStyle(e);return s.backgroundColor==='rgb(27, 36, 49)'&&s.color==='rgb(220, 227, 236)';}));
   await page.screenshot({path:path.join(out,'04-lean-desktop.jpg'),type:'jpeg',quality:88});
   await page.locator('.trace-source-links button').first().click();
   check('Lean reverse link returns to paper',await page.locator('#paper-workspace').isVisible());

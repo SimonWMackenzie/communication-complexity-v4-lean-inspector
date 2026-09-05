@@ -35,6 +35,10 @@
 }
 .trace-toolbar input{width:4.8rem}
 .trace-toolbar .trace-spacer{flex:1}
+/* The classification key sits in the toolbar, i.e. above the page stack, and
+ * never inside .paper-scroll: an overlay there would cover the top of the
+ * reading area that the selected-highlight visibility check measures. */
+.trace-toolbar .tkey{flex:1 1 18rem;min-width:0}
 
 /* --- Three-column reading layout ----------------------------------------- */
 

@@ -9,7 +9,6 @@ ROOT = Path(__file__).resolve().parent
 
 def transform(template):
     template = template.replace('</head>', '<link rel="stylesheet" href="trace.css">\n<link rel="stylesheet" href="design.css">\n</head>')
-    template = template.replace('name="color-scheme" content="dark"', 'name="color-scheme" content="light"')
     template = template.replace('saved<=180', 'saved<=200').replace('scale>=180', 'scale>=200').replace('Math.min(180,scale+10)', 'Math.min(200,scale+10)')
     template = template.replace('function applyScale(){', 'function applyScale(){document.documentElement.classList.toggle("large-text",scale>=150);')
     template = template.replace('Communication complexity / V4', 'Communication complexity')

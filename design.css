@@ -1,39 +1,43 @@
 /* =============================================================================
    V4 paper and Lean inspector — design layer
    =============================================================================
-   A quiet, high-contrast research reading room: the proof is the visual focus.
+   Ported from the published NP-hardness "Formal Proof Explorer" (npcc-lean):
+   the same dark research console — mono eyebrows, glass panels, pill groups,
+   semantic colour, SVG statement cards — applied to this paper's material.
 
-   This is the ONLY place the light palette lives. It is injected after
+   This is the ONLY place the palette lives. It is injected after
    template.html's dark base styles and after trace.css (structure only), so
    equal-specificity declarations here win.
 
    House rules
    -----------
-   1. Tokens first. Every colour, font size, radius, shadow and spacing step
-      comes from §1. Bare lengths appear only as hairline widths (1px/2px/3px),
-      SVG stroke and font sizes, and structural dimensions (column widths,
-      flex bases, viewport heights) that are not part of the type or spacing
-      scale.
-   2. Three components are shared across all three views and are never
-      re-styled per view: the control group (§4), the badge (§6) and the list
-      row (§7). Add a variant, do not fork the component.
-   3. Two breakpoints: 1250px (three columns become two) and 760px (stack),
-      plus a 1700px wide-screen variant. Nothing else.
-   4. Highlight geometry is data. §14 only paints — colour, outline,
+   1. Tokens first (§1). Bare lengths appear only as hairline widths, SVG
+      strokes and font sizes, and structural dimensions.
+   2. PROVENANCE IS COLOUR. Exactly five origins, one colour each:
+        --proved  this paper's own Lean          (EthInapproximability.V4.*)
+        --reused  the companion paper's Lean     (NPCC/Workspace/EthBridge)
+        --def     an earlier route in this repo  (…ParameterizedNP.*)
+        --axiom   an external input, NOT in Lean (dashed everywhere)
+        --faint   library                        (Mathlib / Lean core)
+      Kind (theorem/def/lemma/…) is a mono badge, never a colour.
+   3. Three components are shared by all three views and are never re-styled
+      per view: the control group (§4), the badge (§6) and the list row (§7).
+   4. Highlight geometry is data. §16 only paints — colour, outline,
       box-shadow, clip-path, z-index. No margin, padding, transform or inset.
 
    Contents
    --------
-     §1  Tokens                        §11 Content blocks and code
-     §2  Base elements                 §12 Floating layers
-     §3  Focus                         §13 Paper view: surfaces
-     §4  Controls and control groups   §14 Paper view: highlights
-     §5  Eyebrow and detail headers    §15 Paper view: detail panel
-     §6  Badges                        §16 Dependency explorer
-     §7  List rows                     §17 Breakpoints
-     §8  Top bar and scope strip       §18 Large-text mode
-     §9  Workspace shell               §19 Reduced motion
-     §10 Intro and selected head       §20 Print
+     §1  Tokens                        §12 Content blocks and code
+     §2  Base elements                 §13 Floating layers
+     §3  Focus                         §14 Paper view: surfaces
+     §4  Controls and control groups   §15 Paper view: tracer key + zoom
+     §5  Eyebrow and detail headers    §16 Paper view: highlights
+     §6  Badges and origin marks       §17 Paper view: detail panel
+     §7  List rows                     §18 Dependency explorer
+     §8  Top bar (brand, pills, stats) §19 Legend, hint and floating buttons
+     §9  Proof-shortcut strip          §20 Breakpoints
+     §10 Workspace shell               §21 Large-text mode
+     §11 Intro and selected head       §22 Reduced motion, print
    ========================================================================== */
 
 /* =============================================================================
@@ -41,68 +45,74 @@
    ========================================================================== */
 
 :root{
-  /* -- Surfaces ------------------------------------------------------------ */
-  --bg:#f1f4f8;              /* page ground                                   */
-  --panel:#fff;              /* cards, panels, rails that hold content        */
-  --raised:#f5f7fb;          /* nested surfaces inside a panel                */
-  --quiet:#fbfcfe;           /* navigation and index rails                    */
-  --sunken:#e5ebf2;          /* the ground the paper pages sit on             */
+  /* -- Surfaces (the reference's ground / panel / panel2) ------------------ */
+  --ground:#0e1218;
+  --panel:#151b24;
+  --panel2:#1b2431;
+  --bg:var(--ground);        /* the base template's page ground token        */
+  --raised:var(--panel2);    /* the base template's nested-surface token     */
+  --quiet:#111720;           /* navigation and index rails                   */
+  --sunken:#0a0d12;          /* the ground the paper pages sit on            */
 
   /* -- Lines --------------------------------------------------------------- */
-  --line:#d7e0ea;            /* hairline: panel edges, row separators         */
-  --line-strong:#93a9c0;     /* visible line: control hover, graph edges      */
+  --line:#26313f;
+  --line-strong:#3a4757;
 
   /* -- Ink ----------------------------------------------------------------- */
-  --ink:#172c43;             /* body text (tested literal)                    */
-  --muted:#52657a;           /* secondary text                                */
-  --faint:#5a6b7e;           /* tertiary text, metadata (AA on --accent-soft) */
+  --ink:#dce3ec;
+  --muted:#8a97a9;
+  --faint:#6f7d8d;           /* raised from the reference's #5a6572          */
 
-  /* -- Navy (top bar and the conclusion node) ------------------------------- */
-  --navy:#102a43;
-  --navy-line:#476077;
-  --navy-eyebrow:#9acddd;
-  --on-navy:#e4eff8;
+  /* -- Semantic colour: the five origins ----------------------------------- */
+  --proved:#4bbf73;          /* proved in Lean, in this paper                */
+  --def:#6ea8fe;             /* reused from an earlier route in this repo    */
+  --axiom:#e0a458;           /* external input, not proved in Lean           */
+  --accent:#a78bfa;          /* interface accent: selection, focus, links    */
+  --reused:#48c4d6;          /* reused from the companion paper's Lean       */
+  --headline:#7ee0a0;        /* the root theorem                             */
+  --proved-dim:#2b5a3f;
+  --def-dim:#2f4a6e;
+  --axiom-dim:#6a5330;
+  --reused-dim:#2a5a63;
+  --accent-dim:#4b4275;
 
-  /* -- Accent: one blue family, used everywhere ----------------------------- */
-  --accent:#1765b0;
-  --accent-soft:#e7eff9;     /* selected row background (tested literal)      */
-  --accent-wash:#f0f5fb;     /* hover background                              */
-  --accent-line:#c3d8ee;     /* accent-tinted hairline                        */
+  --proved-fill:#16241b;
+  --def-fill:#152131;
+  --axiom-fill:#241d10;
+  --reused-fill:#0e2a30;
+  --headline-fill:#0f2a1c;
+  --accent-fill:#1d1b2b;
+  --library-fill:#171d26;
 
-  /* -- Supporting hues ------------------------------------------------------ */
-  --cyan:#086678;            /* disclosure summaries, links                   */
-  --green:#216645;
-  --green-soft:#eaf6ee;
-  --green-line:#b8d7c3;
-  --amber:#865512;           /* external / unproved-input family              */
-  --amber-soft:#fff6e5;
-  --amber-line:#e6cc9a;
+  /* Legacy names the base template's own rules read. */
+  --cyan:var(--reused);
+  --green:var(--proved);
+  --amber:var(--axiom);
 
-  /* -- Paper highlights (translucent so the page text reads through) -------- */
-  --hl-line:#6d9dd0;         /* resting outline                               */
-  --hl-hover:#1765b01f;      /* hover and focus wash                          */
-  --hl-wash:#1765b016;       /* selected fill                                 */
-  --hl-ring:#1765b02e;       /* soft ring around the selected box             */
-  --hl-external:#c08a2e;     /* external outline                              */
-  --hl-external-wash:#8655121a;
+  /* -- Paper highlights (translucent so the page text reads through) ------- */
+  --hl-statement:#4bbf73;
+  --hl-assembled:#2f8f57;
+  --hl-external:#e0a458;
+  --hl-unmapped:#6f7d8d;
+  --hl-context:#8a97a9;
 
   /* -- Code surface --------------------------------------------------------- */
-  --code-bg:#101d2b;
-  --code-ink:#e1e9f4;
-  --code-line:#1e354b;
-  --code-comment:#a5b4b0;
-  --code-ref:#a9d5ff;
-  --code-literal:#f3c997;
-  --code-syntax:#d3bdff;
+  --code-bg:#0b0f15;
+  --code-ink:#c9d3e0;
+  --code-line:#26313f;
+  --code-comment:#7b8797;
+  --code-ref:#89ddff;
+  --code-literal:#f78c6c;
+  --code-syntax:#c792ea;
   --code-hover:#1e3550;
 
   /* -- Graph canvas --------------------------------------------------------- */
-  --canvas:#f5f8fc;
-  --canvas-dot:#c4d0df99;
+  --canvas:#0e1218;
+  --canvas-glow:#131a24;
 
   /* -- Type ----------------------------------------------------------------- */
-  --sans:"Segoe UI",system-ui,sans-serif;
-  --serif:Cambria,Georgia,serif;
+  --mono:ui-monospace,"Cascadia Code","JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 
   --fs-xs:.75rem;            /* metadata, captions, badges                    */
   --fs-sm:.8125rem;          /* dense mono, value cells                       */
@@ -110,8 +120,8 @@
   --fs-md:.9375rem;          /* notes and secondary prose                     */
   --fs-lg:1rem;              /* body prose in every detail panel              */
   --fs-xl:1.0625rem;         /* sub-headings                                  */
-  --fs-2xl:1.35rem;          /* mono headings                                 */
-  --fs-3xl:1.6rem;           /* panel and page titles                         */
+  --fs-2xl:1.3rem;           /* mono headings                                 */
+  --fs-3xl:1.5rem;           /* panel and page titles                         */
 
   --lh-tight:1.25;
   --lh-body:1.65;
@@ -128,31 +138,30 @@
   --sp-8:2rem;
 
   /* -- Radii ---------------------------------------------------------------- */
-  --r-sm:.375rem;            /* controls                                      */
-  --r-md:.5rem;              /* nested cards                                  */
-  --r-lg:.75rem;             /* large surfaces                                */
+  --r-sm:.375rem;
+  --r-md:.5rem;
+  --r-lg:.75rem;
   --r-pill:999px;
 
   /* -- Control metrics ------------------------------------------------------- */
   --control-h:2.35rem;
-  --pill-step:2rem;          /* − and + buttons inside a control group        */
-  --pill-value:3.2rem;       /* the value cell inside a control group         */
+  --pill-step:2rem;
+  --pill-value:3.2rem;
 
   /* -- Focus ring (exactly one) --------------------------------------------- */
-  --ring:#1281aa;
-  --ring-w:3px;
+  --ring:var(--accent);
+  --ring-w:2px;
   --ring-offset:3px;
 
-  /* -- Shadows (exactly two) ------------------------------------------------- */
-  --shadow-1:0 3px 16px #172c4310;   /* resting panels                        */
-  --shadow-2:0 14px 44px #102a4326;  /* lifted: paper pages, cards, popovers  */
-  --shadow-node:0 3px 5px #29456414; /* the SVG equivalent of --shadow-1      */
+  /* -- Shadows -------------------------------------------------------------- */
+  --shadow-1:0 2px 14px #05080c66;
+  --shadow-2:0 14px 48px #03060a99;
 
   /* -- Structural rails ------------------------------------------------------ */
-  --rail:20rem;              /* Lean declaration navigation                   */
-  --aside:23rem;             /* graph detail column                           */
+  --rail:20rem;
+  --aside:24rem;
 
-  color-scheme:light;
+  color-scheme:dark;
 }
 
 /* =============================================================================
@@ -160,23 +169,25 @@
    ========================================================================== */
 
 body{
-  background:var(--bg);
+  background:var(--ground);
   color:var(--ink);
   font-family:var(--sans);
   font-size:var(--fs-lg);
   line-height:1.6;
+  -webkit-font-smoothing:antialiased;
 }
 p{line-height:var(--lh-body)}
 h2,h3,h4{color:var(--ink)}
-h2{font-family:var(--serif);font-weight:600;font-size:var(--fs-2xl);line-height:var(--lh-tight)}
-h3{font-size:var(--fs-xl)}
+h2{font-weight:650;font-size:var(--fs-2xl);line-height:var(--lh-tight);letter-spacing:-.01em}
+h3{font-size:var(--fs-xl);font-weight:600}
 h4{font-size:var(--fs-base)}
-a{color:var(--cyan)}
+a{color:var(--reused)}
 small,.small{font-size:var(--fs-sm)}
 .muted{color:var(--muted)}
 .faint{color:var(--faint)}
 code{font-size:.9em}
-summary{color:var(--cyan)}
+summary{color:var(--reused)}
+::selection{background:#3a3163;color:#fff}
 
 /* =============================================================================
    §3  FOCUS — one ring, everywhere
@@ -209,7 +220,7 @@ input[type=text]{
   min-height:var(--control-h);
   border:1px solid var(--line);
   border-radius:var(--r-sm);
-  background:var(--panel);
+  background:var(--panel2);
   color:var(--ink);
 }
 button{
@@ -217,33 +228,33 @@ button{
   transition:background .12s,border-color .12s,color .12s;
 }
 button:hover{
-  background:var(--accent-wash);
-  border-color:var(--line-strong);
+  background:var(--accent-fill);
+  border-color:var(--accent);
+  color:#fff;
 }
 button[aria-pressed=true]{
-  background:var(--accent-soft);
-  border-color:var(--accent-line);
-  color:var(--accent);
+  background:var(--accent-fill);
+  border-color:var(--accent);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px var(--accent);
 }
-button:disabled{opacity:.45}
-/* A select is the one control the engine sizes itself (Chrome forces
-   line-height:normal), so its height is stated rather than derived from
-   padding; the fill matches every other control. */
+button:disabled{opacity:.4}
+/* A select sizes itself (Chrome forces line-height:normal), so its height is
+   stated rather than derived from padding; the fill matches every control. */
 select{
   height:var(--control-h);
   padding:0 var(--sp-4);
-  background:var(--panel);
+  background:var(--panel2);
 }
 input[type=search],
 input[type=number],
-input[type=text]{padding:var(--sp-3)}
+input[type=text]{padding:var(--sp-3);background:var(--ground)}
+input::placeholder{color:var(--faint)}
 input[type=checkbox]{accent-color:var(--accent)}
 
 /* --- The control group: one grouped pill for every stepper ---------------- */
 /* Used by the top bar's text size, the paper zoom and the graph zoom. */
 
-/* The pill is exactly --control-h tall: 2px border + 2 × --sp-0 padding +
-   the 30.78px inner button, so it lines up with its neighbouring controls. */
 .control-group,
 .scale-controls{
   display:inline-flex;
@@ -263,13 +274,14 @@ input[type=checkbox]{accent-color:var(--accent)}
   border:0;
   border-radius:var(--r-pill);
   background:transparent;
-  color:var(--ink);
+  color:var(--muted);
 }
 .control-group button:hover,
 .scale-controls button:hover{
-  background:var(--accent-soft);
+  background:var(--panel2);
   border-color:transparent;
-  color:var(--accent);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px var(--accent);
 }
 .control-group output,
 .scale-controls output{
@@ -278,23 +290,8 @@ input[type=checkbox]{accent-color:var(--accent)}
   min-width:var(--pill-value);
   text-align:center;
   color:var(--ink);
+  font-variant-numeric:tabular-nums;
 }
-
-/* Dark variant, for the navy top bar. */
-.topbar .control-group,
-.topbar .scale-controls{
-  background:transparent;
-  border-color:var(--navy-line);
-}
-.topbar .control-group button,
-.topbar .scale-controls button{color:var(--on-navy)}
-.topbar .control-group button:hover,
-.topbar .scale-controls button:hover{
-  background:var(--on-navy);
-  color:var(--navy);
-}
-.topbar .control-group output,
-.topbar .scale-controls output{color:var(--on-navy)}
 
 /* =============================================================================
    §5  EYEBROW AND DETAIL HEADERS
@@ -303,28 +300,27 @@ input[type=checkbox]{accent-color:var(--accent)}
    head — open the same way: eyebrow, title, kind badge, then prose. */
 
 .eyebrow{
-  font-family:var(--sans);
-  font-size:var(--fs-xs);
-  font-weight:650;
-  letter-spacing:.13em;
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:500;
+  letter-spacing:.22em;
   text-transform:uppercase;
   color:var(--accent);
 }
 .paper-detail h2,
 .graph-detail h2{
-  font-family:var(--serif);
   font-size:var(--fs-3xl);
-  font-weight:600;
+  font-weight:650;
   line-height:var(--lh-tight);
-  letter-spacing:-.02em;
+  letter-spacing:-.015em;
   margin:var(--sp-2) 0 var(--sp-4);
+  text-wrap:balance;
   overflow-wrap:anywhere;
 }
-/* A Lean identifier is a name, not prose: set it like .selected-title so it
-   breaks on the dots instead of hard-breaking serif across four lines. */
 .graph-detail h2.lean-name{
   font-family:var(--mono);
   font-size:var(--fs-2xl);
+  font-weight:600;
   letter-spacing:0;
   line-height:1.35;
 }
@@ -334,55 +330,140 @@ input[type=checkbox]{accent-color:var(--accent)}
   font-size:var(--fs-lg);
   line-height:var(--lh-body);
 }
+/* The reference's rule: a mono, tracked, uppercase label with a hairline. */
 .paper-detail h3,
 .graph-detail h3{
-  font-family:var(--sans);
-  font-size:var(--fs-xl);
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
   margin:var(--sp-7) 0 var(--sp-3);
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:500;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--faint);
 }
+.paper-detail h3::after,
+.graph-detail h3::after{content:"";flex:1;height:1px;background:var(--line)}
 .paper-detail summary,
 .paper-detail a,
 .graph-detail summary,
 .graph-complete-list summary{
-  color:var(--cyan);
+  color:var(--reused);
   font-size:var(--fs-base);
 }
 .graph-detail details{margin-top:var(--sp-6)}
 
+/* --- The provenance card (reference .prov) -------------------------------- */
+
+.prov{
+  margin:var(--sp-4) 0;
+  padding:var(--sp-4) var(--sp-5);
+  background:var(--reused-fill);
+  border:1px solid var(--reused-dim);
+  border-radius:var(--r-md);
+  font-size:var(--fs-md);
+  line-height:1.55;
+  color:#9bdae2;
+}
+/* Label above value: both detail asides are narrow columns, and a two-column
+   definition list leaves the sentences a few words wide. */
+.prov dl{margin:var(--sp-3) 0 0}
+.prov dt{
+  margin-top:var(--sp-4);
+  font-family:var(--mono);
+  font-size:.62rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--reused);
+}
+.prov dt:first-child{margin-top:0}
+.prov dd{margin:var(--sp-1) 0 0;color:#c2dfe4;overflow-wrap:anywhere}
+.prov.is-external{background:var(--axiom-fill);border-color:var(--axiom-dim);color:#e4cfa9}
+.prov.is-external dt{color:var(--axiom)}
+.prov.is-external dd{color:#e6d6b8}
+.prov.is-result{background:var(--proved-fill);border-color:var(--proved-dim);color:#bcdcc6}
+.prov.is-result dt{color:var(--proved)}
+.prov.is-result dd{color:#cfe4d6}
+
 /* =============================================================================
-   §6  BADGES — one shape for .badge and .trace-kind
+   §6  BADGES AND ORIGIN MARKS
    ========================================================================== */
 
 .badge,
 .trace-kind{
   display:inline-block;
-  font-family:var(--sans);
-  font-size:var(--fs-xs);
-  font-weight:600;
-  letter-spacing:.01em;
-  padding:var(--sp-1) var(--sp-4);
-  border:1px solid var(--accent-line);
+  font-family:var(--mono);
+  font-size:.62rem;
+  font-weight:500;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  padding:var(--sp-1) var(--sp-3);
+  border:1px solid var(--line);
   border-radius:var(--r-pill);
-  background:var(--accent-wash);
-  color:var(--accent);
+  background:var(--panel2);
+  color:var(--muted);
 }
 .trace-kind{margin:var(--sp-3) 0}
-.badge.audit{
-  color:var(--green);
-  background:var(--green-soft);
-  border-color:var(--green-line);
+.badge.audit,
+.badge.o-this-paper,
+.trace-kind.statement,
+.trace-kind.definition{
+  color:var(--proved);
+  background:var(--proved-fill);
+  border-color:var(--proved-dim);
 }
+.trace-kind.assembled{color:#8fd1a6;background:var(--proved-fill);border-color:var(--proved-dim)}
 .badge.external,
+.badge.o-external,
 .trace-kind.external{
-  color:var(--amber);
-  background:var(--amber-soft);
-  border-color:var(--amber-line);
+  color:var(--axiom);
+  background:var(--axiom-fill);
+  border-color:var(--axiom-dim);
+}
+.badge.o-companion{
+  color:var(--reused);
+  background:var(--reused-fill);
+  border-color:var(--reused-dim);
+}
+.badge.o-earlier-route{
+  color:var(--def);
+  background:var(--def-fill);
+  border-color:var(--def-dim);
+}
+.badge.o-library{
+  color:var(--faint);
+  background:var(--panel2);
+  border-color:var(--line);
+}
+.badge.o-result{
+  color:var(--headline);
+  background:var(--headline-fill);
+  border-color:var(--proved-dim);
 }
 .trace-kind.unmapped,
 .trace-kind.context{
   color:var(--muted);
-  background:var(--raised);
+  background:var(--panel2);
   border-color:var(--line);
+}
+/* The origin tick: the reference's .prow / .dep colour square. */
+.origin-tick{
+  display:inline-block;
+  flex:0 0 auto;
+  width:.5rem;
+  height:.5rem;
+  border-radius:2px;
+  background:var(--tick,var(--faint));
+}
+.origin-line{
+  display:flex;
+  align-items:baseline;
+  gap:var(--sp-3);
+  margin:var(--sp-3) 0 0;
+  font-size:var(--fs-md);
+  color:var(--muted);
 }
 
 /* =============================================================================
@@ -393,6 +474,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 .trace-index-item,
 .graph-paper-link{
   display:block;
+  position:relative;
   width:100%;
   min-height:0;
   margin:0;
@@ -410,13 +492,15 @@ input[type=checkbox]{accent-color:var(--accent)}
 .decl-row:hover,
 .trace-index-item:hover,
 .graph-paper-link:hover{
-  background:var(--accent-wash);
+  background:var(--panel2);
   border-color:var(--line);
+  box-shadow:none;
+  color:#fff;
 }
 .decl-row[aria-current=true],
 .trace-index-item[aria-current=true],
 .graph-paper-link[aria-current=true]{
-  background:var(--accent-soft);
+  background:var(--panel2);
   color:var(--ink);
   box-shadow:inset 3px 0 var(--accent);
 }
@@ -424,6 +508,20 @@ input[type=checkbox]{accent-color:var(--accent)}
 .graph-paper-link.is-lean{
   font-family:var(--mono);
   font-size:var(--fs-sm);
+}
+/* Rows that carry an origin get the reference's coloured tick at their left. */
+.decl-row[data-origin],
+.trace-index-item[data-classification]{padding-left:calc(var(--sp-5) + var(--sp-4))}
+.decl-row[data-origin]::before,
+.trace-index-item[data-classification]::before{
+  content:"";
+  position:absolute;
+  left:var(--sp-5);
+  top:1.05em;
+  width:7px;
+  height:7px;
+  border-radius:2px;
+  background:var(--tick,var(--faint));
 }
 .decl-row .name{
   display:block;
@@ -437,9 +535,9 @@ input[type=checkbox]{accent-color:var(--accent)}
   display:block;
   margin-top:var(--sp-2);
   font-size:var(--fs-xs);
-  color:var(--faint);
+  color:var(--muted);
 }
-.decl-row .kind{color:var(--cyan)}
+.decl-row .kind{color:var(--reused)}
 .nav-empty,
 .paper-empty{
   font-size:var(--fs-md);
@@ -447,57 +545,296 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 
 /* =============================================================================
-   §8  TOP BAR AND SCOPE STRIP
+   §8  TOP BAR — brand, mode pills, arrow pills, stats, size, search
    ========================================================================== */
 
 .topbar{
-  gap:var(--sp-7);
-  padding:var(--sp-5) var(--sp-7);
-  background:var(--navy);
-  color:var(--on-navy);
-  border-bottom:0;
+  gap:var(--sp-4) var(--sp-5);
+  padding:var(--sp-4) var(--sp-6);
+  background:linear-gradient(180deg,#121821,#0e1218);
+  border-bottom:1px solid var(--line);
+  align-items:flex-start;
 }
-.brand .eyebrow{color:var(--navy-eyebrow)}
+.brand{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-1);
+  flex:0 0 100%;
+  min-width:0;
+}
+.brand .eyebrow{color:var(--accent)}
 .brand h1{
   margin:var(--sp-0) 0;
-  font-family:var(--serif);
-  font-size:var(--fs-3xl);
-  font-weight:500;
-  letter-spacing:-.025em;
+  font-size:1.15rem;
+  font-weight:650;
+  letter-spacing:-.01em;
+  color:var(--ink);
 }
-.brand .small{display:none}
-.toolbar{gap:var(--sp-2)}
-.toolbar button{
-  font-size:var(--fs-base);
-  background:transparent;
-  border-color:var(--navy-line);
-  color:var(--on-navy);
-  transition:none;
-}
-.toolbar button:hover,
-.toolbar button[aria-pressed=true]{
-  background:var(--on-navy);
-  border-color:var(--on-navy);
-  color:var(--navy);
-}
-.scope-strip{
-  padding:var(--sp-3) var(--sp-7);
-  background:var(--sunken);
-  border-bottom:1px solid var(--line);
+.brand .sub{
+  display:block;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
   color:var(--muted);
-  font-size:var(--fs-sm);
+  overflow-wrap:anywhere;
 }
-.scope-strip strong{font-weight:600;color:var(--ink)}
-.scope-strip span{font-size:var(--fs-sm)}
-.skip-link{
+.brand .scopecaveat{
+  max-width:88rem;
+  font-size:var(--fs-xs);
+  line-height:1.5;
+  color:var(--muted);
+}
+.brand .scopecaveat b{color:var(--ink);font-weight:600}
+.brand .scopecaveat .ext{color:var(--axiom);font-weight:600}
+.brand .scopecaveat .cmp{color:var(--reused);font-weight:600}
+
+.toolbar{
+  gap:var(--sp-3);
+  align-items:center;
+  flex:1 1 auto;
+  flex-wrap:wrap;
+}
+.toolbar button{font-size:var(--fs-base)}
+.toolbar-extra{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.toolbar-extra button{
+  min-height:var(--control-h);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  background:transparent;
+  border-color:var(--line);
+  color:var(--muted);
+}
+.toolbar-extra button:hover{background:var(--panel2);color:#fff;border-color:var(--accent)}
+
+/* --- Pill groups: .modes, .routes, .uical --------------------------------- */
+
+.modes,
+.routes{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-0);
+  padding:var(--sp-0);
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+}
+.routes{padding-left:var(--sp-4)}
+.modes button,
+.routes button{
+  min-height:0;
+  padding:var(--sp-3) var(--sp-5);
+  border:0;
+  border-radius:var(--r-sm);
+  background:transparent;
+  color:var(--muted);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  white-space:nowrap;
+}
+.routes button{padding:var(--sp-2) var(--sp-4)}
+.modes button:hover,
+.routes button:hover{background:transparent;border-color:transparent;color:var(--ink);box-shadow:none}
+.modes button[aria-pressed=true],
+.routes button[aria-pressed=true]{
+  background:var(--panel2);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+.routes .rlbl{
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--faint);
+  margin-right:var(--sp-1);
+}
+.uical .ul{
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--faint);
+  padding:0 var(--sp-2) 0 var(--sp-3);
+}
+
+/* --- The stats row -------------------------------------------------------- */
+
+.topbar .stats{
+  display:flex;
+  gap:var(--sp-6);
+  flex-wrap:wrap;
+  margin:0 0 0 auto;
+  align-items:flex-start;
+}
+.topbar .stat{
+  display:flex;
+  flex-direction:column;
+  line-height:1.15;
+  font-size:var(--fs-xs);
+  color:var(--muted);
+}
+.topbar .stat b{
+  font-family:var(--mono);
+  font-size:1rem;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+  margin:0;
+}
+.topbar .stat span{
+  font-size:.6rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.topbar .stat.s-this-paper b{color:var(--proved)}
+.topbar .stat.s-companion b{color:var(--reused)}
+.topbar .stat.s-earlier-route b{color:var(--def)}
+.topbar .stat.s-external b{color:var(--axiom)}
+.topbar .stat.s-axioms b{color:var(--accent)}
+.topbar .stat.s-library b{color:var(--faint)}
+
+/* --- The header search ---------------------------------------------------- */
+
+.searchbox{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  position:relative;
+  padding:0 var(--sp-4);
+  height:var(--control-h);
   background:var(--panel);
   border:1px solid var(--line);
   border-radius:var(--r-sm);
-  color:var(--ink);
 }
+.searchbox .mark{font-family:var(--mono);font-size:var(--fs-base);color:var(--faint)}
+.searchbox input{
+  min-height:0;
+  width:clamp(7rem,12vw,12rem);
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--ink);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+}
+.searchbox input:focus-visible{outline-offset:0}
+.searchbox kbd{
+  font-family:var(--mono);
+  font-size:.6rem;
+  color:var(--faint);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:1px 5px;
+}
+.searchbox .results{
+  position:absolute;
+  left:0;
+  top:calc(100% + var(--sp-2));
+  z-index:60;
+  width:min(30rem,80vw);
+  max-height:24rem;
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  box-shadow:var(--shadow-2);
+}
+.searchbox .results .rgroup{
+  padding:var(--sp-3) var(--sp-5) var(--sp-1);
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+.searchbox .results .none{padding:var(--sp-5);font-size:var(--fs-base);color:var(--muted)}
 
 /* =============================================================================
-   §9  WORKSPACE SHELL AND LEAN NAVIGATION
+   §9  PROOF-SHORTCUT STRIP
+   ========================================================================== */
+
+.proofmap{
+  display:flex;
+  align-items:stretch;
+  gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-5);
+  overflow-x:auto;
+  overflow-y:hidden;
+  background:var(--quiet);
+  border-bottom:1px solid var(--line);
+  scrollbar-width:thin;
+}
+.proofmap .pm-label{
+  position:sticky;
+  left:0;
+  z-index:2;
+  flex:0 0 10rem;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:var(--sp-0);
+  padding-right:var(--sp-4);
+  background:var(--quiet);
+  font-family:var(--mono);
+  white-space:nowrap;
+}
+.proofmap .pm-label b{font-size:var(--fs-xs);font-weight:600;color:var(--ink)}
+.proofmap .pm-label small{font-size:.6rem;color:var(--faint)}
+.proofmap button{
+  flex:0 0 10.5rem;
+  display:grid;
+  grid-template-columns:1.35rem minmax(0,1fr);
+  align-items:center;
+  gap:var(--sp-3);
+  min-height:0;
+  padding:var(--sp-2) var(--sp-3);
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  text-align:left;
+  overflow:hidden;
+}
+.proofmap button:hover,
+.proofmap button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-fill)}
+.proofmap button[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--accent)}
+.proofmap .pm-num{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:1.35rem;
+  height:1.35rem;
+  border-radius:50%;
+  border:1px solid var(--accent-dim);
+  color:var(--accent);
+  font:600 .62rem/1 var(--mono);
+}
+.proofmap button[data-origin=external-companion] .pm-num,
+.proofmap button[data-origin=external-this-paper] .pm-num{border-color:var(--axiom-dim);color:var(--axiom)}
+.proofmap button[data-origin=result] .pm-num{border-color:var(--proved-dim);color:var(--headline)}
+.proofmap .pm-copy{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.proofmap .pm-copy b{
+  font-size:var(--fs-xs);
+  font-weight:600;
+  color:var(--ink);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.proofmap .pm-copy small{
+  margin-top:2px;
+  font-family:var(--mono);
+  font-size:.58rem;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.proofmap::-webkit-scrollbar{height:6px}
+.proofmap::-webkit-scrollbar-track{background:var(--ground)}
+.proofmap::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
+
+/* =============================================================================
+   §10  WORKSPACE SHELL AND LEAN NAVIGATION
    ========================================================================== */
 
 .workspace{grid-template-columns:var(--rail) minmax(0,1fr)}
@@ -512,20 +849,17 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .nav-header label,
 .nav-flags{font-size:var(--fs-base);color:var(--muted)}
-/* .nav-more is a button and takes the shared button ink, not label ink. */
 .nav-more{font-size:var(--fs-base)}
 .search-wrap input,
 .filters select,
 .graph-detail input[type=search],
 .paper-index-head input[type=search]{
-  background:var(--panel);
+  background:var(--ground);
   border:1px solid var(--line);
   border-radius:var(--r-sm);
   color:var(--ink);
   font-size:var(--fs-base);
 }
-/* The three result counters — this one, .trace-index-count and #graph-count —
-   are the same kind of text and share one size. */
 .nav-count{
   margin-top:var(--sp-3);
   font-size:var(--fs-sm);
@@ -533,8 +867,34 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .content{padding:var(--sp-7) var(--sp-8) var(--sp-8)}
 
+/* --- The site footer: axiom footprint and external inputs ----------------- */
+
+.sitefoot{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:var(--sp-3) var(--sp-6);
+  padding:var(--sp-4) var(--sp-6);
+  border-top:1px solid var(--line);
+  background:var(--quiet);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  color:var(--faint);
+}
+.sitefoot b{color:var(--muted);font-weight:500}
+.sitefoot .axfoot{color:var(--accent)}
+.sitefoot .extfoot{color:var(--axiom)}
+.sitefoot .spacer{flex:1}
+.sitefoot button{
+  min-height:0;
+  padding:var(--sp-2) var(--sp-4);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  background:var(--panel2);
+}
+
 /* =============================================================================
-   §10  INTRO AND SELECTED HEAD
+   §11  INTRO AND SELECTED HEAD
    ========================================================================== */
 
 .intro{
@@ -545,26 +905,19 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-lg);
   box-shadow:var(--shadow-1);
 }
-.intro h2{
-  font-size:var(--fs-3xl);
-  letter-spacing:-.025em;
-}
+.intro h2{font-size:var(--fs-3xl);letter-spacing:-.02em}
 .intro .intro-copy{font-size:var(--fs-lg)}
-.intro details{
-  font-size:var(--fs-base);
-  border-color:var(--line);
-}
+.intro details{font-size:var(--fs-base);border-color:var(--line)}
 .intro summary,
 .intro-actions button{font-size:var(--fs-base)}
-.stat{font-size:var(--fs-sm);color:var(--muted)}
-.stat b{
+.content .stats{gap:var(--sp-6)}
+.content .stat{font-size:var(--fs-sm);color:var(--muted)}
+.content .stat b{
   font-size:var(--fs-lg);
   font-family:var(--mono);
   color:var(--ink);
 }
 .selected-head{padding-bottom:var(--sp-4)}
-/* trace.js reorders this head to eyebrow → title → sub → badge → prose, the
-   order the paper and graph detail panels already use. */
 .selected-head .badges{margin:var(--sp-3) 0 var(--sp-2)}
 .selected-title{
   font-family:var(--mono);
@@ -573,8 +926,6 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
 }
 .selected-sub{font-size:var(--fs-sm);color:var(--muted)}
-/* One row, always: a wrapped second row detaches the selected tab's indicator
-   from the strip's own bottom line, so the strip scrolls sideways instead. */
 .tabs{
   border-color:var(--line);
   flex-wrap:nowrap;
@@ -582,21 +933,19 @@ input[type=checkbox]{accent-color:var(--accent)}
   overflow-y:hidden;
   scrollbar-width:none;
 }
-/* A reserved scrollbar would sit between the selected tab's indicator and the
-   strip's own bottom line, which is the detachment this rule exists to fix;
-   the strip still scrolls by wheel, touch and tab focus. */
 .tabs::-webkit-scrollbar{height:0}
 .tabs button{
   flex:0 0 auto;
   padding:var(--sp-4);
   border-radius:var(--r-sm) var(--r-sm) 0 0;
+  border-color:transparent;
+  background:transparent;
   font-size:var(--fs-base);
   color:var(--muted);
   white-space:nowrap;
 }
-/* A scroll container clips an outward ring, so this one is drawn inside. */
 .tabs button:focus-visible{outline-offset:calc(-1 * var(--ring-offset))}
-.tabs button:hover{color:var(--ink)}
+.tabs button:hover{color:var(--ink);background:transparent;border-color:transparent}
 .tabs button[aria-selected=true]{
   background:var(--panel);
   border:1px solid var(--line);
@@ -605,7 +954,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 
 /* =============================================================================
-   §11  CONTENT BLOCKS AND CODE
+   §12  CONTENT BLOCKS AND CODE
    ========================================================================== */
 
 .section-card,
@@ -616,24 +965,23 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-lg);
   box-shadow:var(--shadow-1);
 }
-.section-card h3{
-  font-size:var(--fs-xl);
-  color:var(--ink);
-}
+.section-card h3{font-size:var(--fs-xl);color:var(--ink);font-family:var(--sans);letter-spacing:0;text-transform:none}
+.section-card h3::after{display:none}
 .panel-note{font-size:var(--fs-md);color:var(--muted)}
 .notice{
   padding:var(--sp-4) var(--sp-5);
-  background:var(--amber-soft);
-  border:1px solid var(--amber-line);
-  border-left:3px solid var(--amber);
+  background:var(--axiom-fill);
+  border:1px solid var(--axiom-dim);
+  border-left:3px solid var(--axiom);
   border-radius:var(--r-md);
   font-size:var(--fs-md);
-  color:var(--ink);
+  color:#e6d6b8;
 }
 .notice.neutral{
-  background:var(--accent-wash);
-  border-color:var(--accent-line);
-  border-left-color:var(--accent);
+  background:var(--panel2);
+  border-color:var(--line);
+  border-left-color:var(--reused);
+  color:var(--ink);
 }
 .empty{
   border:1px dashed var(--line-strong);
@@ -654,15 +1002,15 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-md);
   color:var(--code-ink);
   font-size:var(--fs-base);
-  line-height:1.7;
+  line-height:1.65;
 }
-.codeblock .comment{color:var(--code-comment)}
-.codeblock .ref{color:var(--code-ref)}
-.codeblock .ref:hover{background:var(--code-hover)}
+.codeblock .comment{color:var(--code-comment);font-style:italic}
+.codeblock .ref{color:var(--code-ref);text-decoration-color:#3f5f7a}
+.codeblock .ref:hover{background:var(--code-hover);color:#eaf6ff}
 .codeblock .literal,
 .codeblock .num{color:var(--code-literal)}
 .codeblock .syntax{color:var(--code-syntax)}
-.codeblock .syntax:hover{background:var(--code-hover)}
+.codeblock .syntax:hover{background:#2c2343}
 .dependency-columns{gap:var(--sp-7)}
 .dep-list li{border-color:var(--line)}
 .dep-link{
@@ -674,33 +1022,26 @@ input[type=checkbox]{accent-color:var(--accent)}
   font-family:var(--mono);
   font-size:var(--fs-sm);
 }
-.dep-link:hover{
-  background:transparent;
-  text-decoration:underline;
-}
-.dep-list .small{
-  display:block;
-  font-size:var(--fs-xs);
-  color:var(--faint);
-}
+.dep-link:hover{background:transparent;text-decoration:underline;color:#fff}
+.dep-list .small{display:block;font-size:var(--fs-xs);color:var(--faint)}
 .footer-note{
   border-color:var(--line);
   font-size:var(--fs-base);
   color:var(--muted);
 }
-.paper-card .hash{font-size:var(--fs-xs);color:var(--muted)}
+.paper-card .hash{font-size:var(--fs-xs);color:var(--faint)}
 .paper-card .paper-description{font-size:var(--fs-base)}
 
 /* The small dependency preview drawn inside the Lean view. */
 .graph-frame{
-  background:var(--raised);
+  background:var(--panel);
   border:1px solid var(--line);
   border-radius:var(--r-md);
 }
-.graph-node rect{fill:var(--panel);stroke:var(--line-strong)}
-.graph-node.root rect{fill:var(--accent-soft);stroke:var(--accent)}
+.graph-node rect{fill:var(--panel2);stroke:var(--line-strong)}
+.graph-node.root rect{fill:var(--accent-fill);stroke:var(--accent)}
 .graph-node:hover rect,
-.graph-node:focus rect{fill:var(--accent-wash);stroke:var(--accent)}
+.graph-node:focus rect{fill:var(--panel2);stroke:var(--accent)}
 .graph-node text{fill:var(--ink);font-size:12px}
 .graph-node .sub{fill:var(--muted);font-size:11px}
 .graph-edge{stroke:var(--line-strong)}
@@ -709,50 +1050,56 @@ input[type=checkbox]{accent-color:var(--accent)}
 .graph-controls select{font-size:var(--fs-base)}
 
 /* =============================================================================
-   §12  FLOATING LAYERS
+   §13  FLOATING LAYERS — definition cards (the reference's .gwin windows)
    ========================================================================== */
 
 .definition-card{
-  background:var(--panel);
+  background:#12181f;
   border:1px solid var(--line-strong);
   border-radius:var(--r-lg);
   box-shadow:var(--shadow-2);
 }
 .card-header{
-  padding:var(--sp-4);
-  background:var(--accent-wash);
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--panel);
   border-color:var(--line);
 }
 .card-header h2{
   font-family:var(--mono);
   font-size:var(--fs-base);
-  color:var(--ink);
+  font-weight:600;
+  color:#e6d7ff;
 }
 .card-header button{
   min-height:0;
-  color:var(--ink);
-  background:transparent;
-  border:0;
+  padding:var(--sp-1) var(--sp-3);
+  color:var(--muted);
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
 }
+.card-header button:hover{color:#fff;border-color:var(--accent)}
 .card-body{
   padding:var(--sp-5) var(--sp-6);
   font-size:var(--fs-md);
+  background:#12181f;
 }
 .card-body .codeblock{font-size:var(--fs-sm)}
 .card-body .data-list{font-size:var(--fs-base)}
-.card-controls{border-color:var(--line)}
+.card-controls{border-color:var(--line);background:var(--panel)}
 #status-message{
-  background:var(--navy);
-  border:1px solid var(--navy-line);
-  border-radius:var(--r-md);
-  color:var(--panel);
-  font-size:var(--fs-base);
-}
-#fatal{
-  background:var(--amber-soft);
-  border:1px solid var(--amber-line);
+  background:var(--panel2);
+  border:1px solid var(--accent);
   border-radius:var(--r-md);
   color:var(--ink);
+  font-size:var(--fs-base);
+  box-shadow:var(--shadow-2);
+}
+#fatal{
+  background:var(--axiom-fill);
+  border:1px solid var(--axiom-dim);
+  border-radius:var(--r-md);
+  color:#e6d6b8;
 }
 .trace-loading{
   background:var(--panel);
@@ -762,7 +1109,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 
 /* =============================================================================
-   §13  PAPER VIEW — SURFACES
+   §14  PAPER VIEW — SURFACES
    ========================================================================== */
 
 .trace-toolbar{
@@ -780,71 +1127,105 @@ input[type=checkbox]{accent-color:var(--accent)}
 .paper-index-head label{font-size:var(--fs-base);color:var(--muted)}
 .trace-index-count{font-size:var(--fs-sm);color:var(--muted)}
 
-/* The page stack sits on a quiet neutral so the white pages read as paper. */
+/* The page stack sits on the darkest ground so the white pages read as paper.
+   Only the image plane is white: the figure itself, and therefore the page
+   caption below it, stay on the dark ground. */
 .paper-scroll{background:var(--sunken)}
-.paper-page{
-  background:var(--panel);
+.paper-page{background:transparent}
+.paper-image{
+  background:#fff;
+  border-radius:2px;
   box-shadow:var(--shadow-2);
 }
 .paper-page figcaption{
-  background:var(--panel);
-  color:var(--faint);
+  background:transparent;
+  color:var(--muted);
+  font-family:var(--mono);
   font-size:var(--fs-xs);
 }
 
 /* =============================================================================
-   §14  PAPER VIEW — HIGHLIGHTS
+   §15  PAPER VIEW — TRACER KEY AND ZOOM PILL
+   ========================================================================== */
+
+.tkey{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-2) var(--sp-5);
+  flex-wrap:wrap;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  color:var(--muted);
+}
+.tkey .k{display:flex;align-items:center;gap:var(--sp-2);white-space:nowrap}
+.tkey .kb{
+  width:11px;
+  height:11px;
+  border-radius:2px;
+  border:1.5px solid var(--tick,var(--faint));
+  background:color-mix(in srgb,var(--tick,var(--faint)) 18%,transparent);
+}
+.tkey .k.is-unmapped .kb{border-style:dotted;background:transparent}
+
+.zoombar{display:inline-flex;align-items:center}
+.zoombar .zb{
+  gap:var(--sp-1);
+  padding:var(--sp-1);
+  background:var(--panel2);
+  border-color:var(--line-strong);
+  box-shadow:var(--shadow-1);
+}
+.zoombar .zb button{color:var(--ink);font-family:var(--mono)}
+.zoombar .zb output{color:#fff;font-weight:600}
+
+/* =============================================================================
+   §16  PAPER VIEW — HIGHLIGHTS
    ========================================================================== */
 /* Paint only. Recorded rectangles frequently touch or overlap, so resting
    highlights are outline-only: adjacent outlines stay legible where stacked
    fills would compound into a blotch. trace.js additionally clips the lower
-   edge of a box that would cover the next one. */
+   edge of a box that would cover the next one; the border box is never moved. */
 
 .paper-highlight{
-  border:1.5px solid var(--hl-line);
-  border-radius:2px;
+  border:1.5px solid var(--hl,var(--hl-statement));
+  border-radius:3px;
   background:transparent;
 }
 .paper-highlight:hover,
 .paper-highlight:focus-visible{
-  background:var(--hl-hover);
-  border-color:var(--accent);
+  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 22%,transparent);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent);
 }
 /* The ring is inset: an outward one is painted outside the border box, which
    is exactly the region trace.js removes with clip-path, so a trimmed box
    would show no halo at all. */
 .paper-highlight.selected{
   border:2px solid var(--accent);
-  background:var(--hl-wash);
-  box-shadow:inset 0 0 0 3px var(--hl-ring);
+  background:color-mix(in srgb,var(--accent) 20%,transparent);
+  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent);
 }
-.paper-highlight.external{border-color:var(--hl-external)}
-.paper-highlight.external:hover,
-.paper-highlight.external:focus-visible{
-  background:var(--hl-external-wash);
-  border-color:var(--amber);
-}
+.paper-highlight.statement,
+.paper-highlight.definition{--hl:var(--hl-statement)}
+.paper-highlight.assembled{--hl:var(--hl-assembled)}
+.paper-highlight.external{--hl:var(--hl-external)}
 .paper-highlight.external.selected{
-  border-color:var(--amber);
-  background:var(--hl-external-wash);
-  box-shadow:inset 0 0 0 3px var(--amber-line);
+  border-color:var(--axiom);
+  background:color-mix(in srgb,var(--axiom) 22%,transparent);
+  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--axiom) 45%,transparent);
 }
 .paper-highlight.unmapped{
+  --hl:var(--hl-unmapped);
   border-style:dotted;
-  border-color:var(--faint);
-  opacity:.5;
+  opacity:.6;
 }
-.paper-highlight.context{
-  border-color:var(--line-strong);
-  opacity:.75;
-}
+.paper-highlight.context{--hl:var(--hl-context);opacity:.7}
 .paper-highlight.unmapped:hover,
 .paper-highlight.context:hover,
 .paper-highlight.unmapped:focus-visible,
 .paper-highlight.context:focus-visible{opacity:1}
 
 /* =============================================================================
-   §15  PAPER VIEW — DETAIL PANEL
+   §17  PAPER VIEW — DETAIL PANEL
    ========================================================================== */
 
 .paper-detail{
@@ -852,54 +1233,60 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-left:1px solid var(--line);
 }
 .trace-lean-item{
-  background:var(--raised);
+  background:var(--panel2);
   border:1px solid var(--line);
   border-radius:var(--r-md);
+  border-left:3px solid var(--tick,var(--proved));
 }
 .trace-lean-item .mono{
   font-size:var(--fs-sm);
   line-height:1.5;
   color:var(--ink);
 }
-.trace-lean-item p{font-size:var(--fs-md);line-height:var(--lh-body)}
+.trace-lean-item p{font-size:var(--fs-md);line-height:var(--lh-body);color:var(--muted)}
+.trace-lean-item .origin-line{font-size:var(--fs-xs)}
 .trace-lean-actions button{font-size:var(--fs-base)}
 .paper-detail .trace-detail-note{
-  background:var(--amber-soft);
-  border-left:3px solid var(--amber);
+  background:var(--axiom-fill);
+  border-left:3px solid var(--axiom);
   border-radius:0 var(--r-sm) var(--r-sm) 0;
   font-size:var(--fs-md);
+  color:#e6d6b8;
+}
+.paper-detail .trace-tooltip{font-size:var(--fs-base);color:var(--muted)}
+.trace-map-link{
+  display:block;
+  width:100%;
+  margin:var(--sp-4) 0;
+  font-size:var(--fs-base);
+  text-align:left;
+  background:var(--panel2);
+  border-color:var(--accent-dim);
   color:var(--ink);
 }
-.paper-detail .trace-tooltip{
-  font-size:var(--fs-base);
-  color:var(--muted);
-}
 .trace-source-links button{font-size:var(--fs-base);text-align:left}
-.trace-source-links .trace-links-label{
-  font-size:var(--fs-base);
-  color:var(--cyan);
-}
+.trace-source-links .trace-links-label{font-size:var(--fs-base);color:var(--reused)}
 
 /* =============================================================================
-   §16  DEPENDENCY EXPLORER
+   §18  DEPENDENCY EXPLORER
    ========================================================================== */
 
 .graph-workspace{
   max-width:1900px;
   margin:auto;
-  padding:var(--sp-7) var(--sp-7) var(--sp-8);
+  padding:var(--sp-6) var(--sp-6) var(--sp-7);
 }
 .graph-heading-row{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:var(--sp-7);
-  margin-bottom:var(--sp-6);
+  margin-bottom:var(--sp-5);
 }
 .graph-heading-row h2{
-  margin:var(--sp-2) 0;
+  margin:var(--sp-1) 0;
   font-size:var(--fs-3xl);
-  letter-spacing:-.03em;
+  letter-spacing:-.02em;
 }
 .graph-heading-row p{
   max-width:62rem;
@@ -925,6 +1312,33 @@ input[type=checkbox]{accent-color:var(--accent)}
   font-size:var(--fs-base);
   color:var(--muted);
 }
+/* The origin filter reads as a legend you can switch off. */
+.origin-filter{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:var(--sp-2);
+  padding:var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-4);
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:var(--r-pill);
+}
+.origin-filter .oflabel{
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+.origin-filter .graph-check{
+  gap:var(--sp-2);
+  padding:var(--sp-1) var(--sp-3);
+  border-radius:var(--r-pill);
+  font-size:var(--fs-xs);
+  color:var(--muted);
+  white-space:nowrap;
+}
+.origin-filter .graph-check .origin-tick{width:.55rem;height:.55rem}
 .source-controls{
   display:flex;
   align-items:center;
@@ -953,10 +1367,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-md);
   box-shadow:var(--shadow-2);
 }
-.graph-search-results .graph-paper-link{
-  font-family:var(--mono);
-  font-size:var(--fs-sm);
-}
+.graph-search-results .graph-paper-link{font-family:var(--mono);font-size:var(--fs-sm)}
 .graph-focus{
   width:100%;
   padding-top:var(--sp-3);
@@ -981,13 +1392,18 @@ input[type=checkbox]{accent-color:var(--accent)}
   font-size:var(--fs-sm);
   color:var(--muted);
 }
+.graph-statusbar #graph-count .o{font-family:var(--mono);white-space:nowrap}
+.graph-statusbar #graph-count .o-this-paper{color:var(--proved)}
+.graph-statusbar #graph-count .o-companion{color:var(--reused)}
+.graph-statusbar #graph-count .o-earlier-route{color:var(--def)}
+.graph-statusbar #graph-count .o-library{color:var(--faint)}
 .graph-message{
   padding:var(--sp-4) var(--sp-5);
-  background:var(--amber-soft);
-  border-left:3px solid var(--amber);
+  background:var(--axiom-fill);
+  border-left:3px solid var(--axiom);
   border-radius:0 var(--r-sm) var(--r-sm) 0;
   font-size:var(--fs-md);
-  color:var(--ink);
+  color:#e6d6b8;
 }
 .graph-message:empty{display:none}
 
@@ -1003,16 +1419,17 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-lg);
   box-shadow:var(--shadow-1);
 }
+.canvas-wrap{position:relative;min-width:0;display:flex}
 .graph-canvas{
+  flex:1;
+  min-width:0;
   max-height:76vh;
   min-height:38rem;
   padding:var(--sp-4);
   overflow:auto;
   cursor:grab;
   touch-action:pan-x pan-y;
-  background-color:var(--canvas);
-  background-image:radial-gradient(var(--canvas-dot) .8px,transparent .8px);
-  background-size:20px 20px;
+  background:radial-gradient(1200px 700px at 30% 20%,var(--canvas-glow) 0,var(--canvas) 70%);
 }
 .graph-canvas:active{cursor:grabbing}
 .graph-canvas svg{display:block;max-width:none}
@@ -1020,10 +1437,12 @@ input[type=checkbox]{accent-color:var(--accent)}
   min-width:0;
   max-height:76vh;
   overflow:auto;
-  padding:var(--sp-7);
+  padding:var(--sp-6);
   background:var(--panel);
   border-left:1px solid var(--line);
 }
+.graph-detail .badges{margin:var(--sp-2) 0 var(--sp-4)}
+.graph-detail .graph-component .badges{margin:var(--sp-3) 0}
 .graph-detail .graph-full-name{
   font-family:var(--mono);
   font-size:var(--fs-sm);
@@ -1033,45 +1452,45 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .graph-detail .graph-detail-note{
   padding:var(--sp-4) var(--sp-5);
-  background:var(--accent-wash);
+  background:var(--panel2);
   border-left:3px solid var(--accent);
   border-radius:0 var(--r-sm) var(--r-sm) 0;
   font-size:var(--fs-base);
   color:var(--muted);
 }
+.graph-detail .graph-detail-note.is-external{
+  background:var(--axiom-fill);
+  border-left-color:var(--axiom);
+  color:#e6d6b8;
+}
+.graph-detail .graph-detail-note.is-companion{
+  background:var(--reused-fill);
+  border-left-color:var(--reused);
+  color:#9bdae2;
+}
 .graph-detail .graph-edge-meaning,
 .graph-detail .graph-occurrence{font-size:var(--fs-base)}
-.graph-occurrence{
-  padding-top:var(--sp-3);
-  border-top:1px solid var(--line);
-}
+.graph-occurrence{padding-top:var(--sp-3);border-top:1px solid var(--line)}
 .graph-component{
   margin:var(--sp-4) 0;
   padding:var(--sp-4);
-  background:var(--raised);
+  background:var(--panel2);
   border:1px solid var(--line);
+  border-left:3px solid var(--tick,var(--proved));
   border-radius:var(--r-md);
 }
 .graph-component button{margin:var(--sp-1) var(--sp-2) var(--sp-0) 0}
-.graph-stat-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:var(--sp-2);
-  margin:var(--sp-4) 0;
-}
+.graph-stat-row{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-4) 0}
 .graph-stat-row span{
   padding:var(--sp-1) var(--sp-3);
-  background:var(--accent-wash);
+  background:var(--panel2);
+  border:1px solid var(--line);
   border-radius:var(--r-sm);
-  font-size:var(--fs-sm);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
   color:var(--muted);
 }
-.graph-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:var(--sp-2);
-  margin:var(--sp-5) 0;
-}
+.graph-actions{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-5) 0}
 .graph-edge-evidence{max-height:58vh;overflow:auto}
 .graph-group-list{max-height:48vh;overflow:auto}
 .graph-complete-list{
@@ -1091,94 +1510,237 @@ input[type=checkbox]{accent-color:var(--accent)}
   overflow:auto;
   margin-top:var(--sp-5);
 }
+/* The companion-reach list: one collapsible block per vendored module. */
+.companion-modules{margin:var(--sp-3) 0}
+.companion-modules details{
+  margin:var(--sp-2) 0;
+  background:var(--reused-fill);
+  border:1px solid var(--reused-dim);
+  border-radius:var(--r-sm);
+}
+.companion-modules summary{
+  padding:var(--sp-3) var(--sp-4);
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  color:var(--reused);
+  overflow-wrap:anywhere;
+}
+.companion-modules .cm-count{color:var(--muted);margin-left:var(--sp-2)}
+.companion-modules .cm-body{padding:0 var(--sp-4) var(--sp-4)}
+.companion-modules .cm-decl{
+  display:flex;
+  align-items:baseline;
+  gap:var(--sp-3);
+  padding:var(--sp-2) 0;
+  border-top:1px solid var(--reused-dim);
+}
+.companion-modules .cm-decl .n{
+  flex:1;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  color:#bfe6ec;
+  overflow-wrap:anywhere;
+}
+.companion-modules .cm-decl button{
+  min-height:0;
+  flex:0 0 auto;
+  padding:var(--sp-1) var(--sp-3);
+  font-size:var(--fs-xs);
+}
 
 /* --- The drawn graph ------------------------------------------------------ */
 
 .proof-node{cursor:pointer;outline:none}
-.proof-node rect{
+.proof-node rect.card{
   fill:var(--panel);
   stroke:var(--line-strong);
-  stroke-width:1.2;
-  filter:drop-shadow(var(--shadow-node));
+  stroke-width:1.4;
+  transition:filter .12s;
 }
-.proof-node.external rect{
-  fill:var(--amber-soft);
-  stroke:var(--amber-line);
-  stroke-dasharray:5 3;
-}
-.proof-node.conclusion rect{fill:var(--navy);stroke:var(--navy)}
-.proof-node.selected rect,
-.proof-node:hover rect,
-.proof-node:focus rect{
-  stroke:var(--accent);
-  stroke-width:3;
-}
+.proof-node:hover rect.card{filter:brightness(1.35)}
+.proof-node.o-this-paper rect.card{fill:var(--proved-fill);stroke:var(--proved)}
+.proof-node.o-earlier-route rect.card{fill:var(--def-fill);stroke:var(--def)}
+.proof-node.o-companion rect.card{fill:var(--reused-fill);stroke:var(--reused);stroke-dasharray:4 2}
+.proof-node.o-library rect.card{fill:var(--library-fill);stroke:var(--line-strong)}
+.proof-node.o-external rect.card,
+.proof-node.external rect.card{fill:var(--axiom-fill);stroke:var(--axiom);stroke-dasharray:5 3}
+.proof-node.o-result rect.card,
+.proof-node.conclusion rect.card{fill:var(--headline-fill);stroke:var(--headline);stroke-width:2.2}
+.proof-node.selected rect.card,
+.proof-node:focus rect.card{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:none}
 .proof-node-title{
   font-family:var(--sans);
-  font-size:16px;
+  font-size:14px;
   font-weight:600;
   fill:var(--ink);
   pointer-events:none;
 }
+.proof-node.o-result .proof-node-title{fill:#eafff2}
+/* A Lean identifier is a name, not prose: it is set in the mono face. */
+.proof-node-title.is-lean{font-family:var(--mono);font-size:11.5px;font-weight:500}
 .proof-node-caption{
-  font-family:var(--sans);
-  font-size:12px;
-  letter-spacing:.6px;
-  fill:var(--faint);
+  font-family:var(--mono);
+  font-size:9.5px;
+  letter-spacing:.09em;
+  fill:var(--muted);
   pointer-events:none;
 }
-.proof-node.external .proof-node-caption{fill:var(--amber)}
-.proof-node.conclusion text{fill:var(--on-navy)}
+.proof-node.o-this-paper .proof-node-caption{fill:#7fae90}
+.proof-node.o-earlier-route .proof-node-caption{fill:#8fb2e6}
+.proof-node.o-companion .proof-node-caption{fill:#7fd6e0}
+.proof-node.o-external .proof-node-caption,
+.proof-node.external .proof-node-caption{fill:var(--axiom)}
+.proof-node.o-result .proof-node-caption{fill:var(--headline)}
+.proof-node .chip{pointer-events:none}
+.proof-node .chip rect{fill:#0c1119;stroke:var(--line);stroke-width:1}
+.proof-node .chip text{font-family:var(--mono);font-size:9px;fill:var(--muted)}
+.proof-node .chip.companion rect{fill:var(--reused-fill);stroke:var(--reused-dim)}
+.proof-node .chip.companion text{fill:var(--reused)}
 .proof-edge{cursor:pointer;outline:none;pointer-events:none}
 .proof-edge-line{
   fill:none;
   stroke:var(--line-strong);
-  stroke-width:1.6;
+  stroke-width:1.4;
   pointer-events:none;
 }
-.proof-edge-hit{
-  fill:none;
-  stroke:transparent;
-  stroke-width:16;
-  pointer-events:stroke;
-}
+.graph-canvas.rel-source .proof-edge-line{stroke-dasharray:5 3}
+.proof-edge-hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke}
 .proof-edge:hover .proof-edge-line,
-.proof-edge:focus .proof-edge-line{
-  stroke:var(--accent);
-  stroke-width:3;
-}
+.proof-edge:focus .proof-edge-line{stroke:var(--accent);stroke-width:2.4;stroke-dasharray:none}
 .proof-edge:hover,
 .proof-edge:focus{outline:none}
 #graph-canvas marker path{fill:var(--line-strong)}
 
 /* =============================================================================
-   §17  BREAKPOINTS — 1700px wide variant, then 1250px and 760px
+   §19  LEGEND, HINT AND FLOATING BUTTONS (over the canvas)
+   ========================================================================== */
+
+.legend{
+  position:absolute;
+  left:var(--sp-5);
+  bottom:var(--sp-5);
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-2);
+  max-width:min(30rem,60%);
+  padding:var(--sp-4) var(--sp-5);
+  background:#101520d9;
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  backdrop-filter:blur(4px);
+}
+.legend .lg-t{
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+.legend .row{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  font-size:var(--fs-xs);
+  color:var(--muted);
+}
+.legend .sw{
+  flex:0 0 auto;
+  width:11px;
+  height:11px;
+  border-radius:3px;
+  border:1.5px solid var(--tick,var(--faint));
+  background:color-mix(in srgb,var(--tick,var(--faint)) 20%,transparent);
+}
+.legend .row.is-dashed .sw{border-style:dashed}
+.legend .rule{
+  flex:0 0 auto;
+  width:22px;
+  height:0;
+  border-top:1.6px solid var(--line-strong);
+}
+.legend .rule.dashed{border-top-style:dashed}
+.legend .rt{
+  margin-top:var(--sp-2);
+  padding-top:var(--sp-3);
+  border-top:1px solid var(--line);
+}
+.legend .note{font-size:var(--fs-xs);color:var(--faint);line-height:1.45}
+.hint{
+  position:absolute;
+  left:50%;
+  top:var(--sp-4);
+  transform:translateX(-50%);
+  z-index:4;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  color:var(--faint);
+  text-align:center;
+  pointer-events:none;
+}
+.fab{
+  position:absolute;
+  right:var(--sp-5);
+  bottom:var(--sp-5);
+  z-index:5;
+  display:flex;
+  gap:var(--sp-2);
+}
+.fab button{
+  min-height:0;
+  padding:var(--sp-3) var(--sp-4);
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  background:var(--panel2);
+  border-color:var(--line);
+  box-shadow:var(--shadow-1);
+}
+
+/* =============================================================================
+   §20  BREAKPOINTS — 1700px wide variant, then 1250px and 760px
    ========================================================================== */
 
 @media(min-width:1700px){
   .workspace{grid-template-columns:22rem minmax(0,1fr)}
 }
 
+@media(max-width:1400px){
+  .brand .scopecaveat{max-width:none}
+  .searchbox input{width:6rem}
+  .searchbox kbd{display:none}
+}
+
 @media(max-width:1250px){
-  .topbar{gap:var(--sp-4)}
+  .topbar{gap:var(--sp-3)}
+  .topbar .stats{margin-left:0;gap:var(--sp-5)}
   .workspace{grid-template-columns:17rem minmax(0,1fr)}
-  .paper-detail{
-    border-left:0;
-    border-top:1px solid var(--line);
-  }
+  .paper-detail{border-left:0;border-top:1px solid var(--line)}
   .graph-workspace{padding:var(--sp-5)}
   .graph-layout{grid-template-columns:minmax(0,1fr) 20rem}
   .graph-detail{padding:var(--sp-5)}
   .graph-heading-row{flex-wrap:wrap}
   .graph-heading-row h2{font-size:var(--fs-2xl)}
+  .legend{max-width:min(24rem,72%)}
 }
 
 @media(max-width:760px){
-  .topbar{padding:var(--sp-5)}
-  .brand h1{font-size:var(--fs-2xl)}
-  .toolbar{width:100%}
-  .scope-strip{padding:var(--sp-3) var(--sp-5)}
-  .scope-strip span{display:none}
+  .topbar{padding:var(--sp-4);gap:var(--sp-3)}
+  .brand h1{font-size:var(--fs-xl)}
+  .brand .scopecaveat{font-size:.7rem}
+  .toolbar{width:100%;gap:var(--sp-2)}
+  .modes,
+  .routes{flex-wrap:wrap}
+  .modes button,
+  .routes button{padding:var(--sp-2) var(--sp-3)}
+  .topbar .stats{width:100%;gap:var(--sp-4);justify-content:space-between}
+  .searchbox{flex:1 1 100%}
+  .searchbox input{width:100%}
+  .searchbox .results{width:100%}
+  .proofmap{padding:var(--sp-2) var(--sp-4)}
+  .proofmap .pm-label{flex-basis:7.5rem}
+  .proofmap button{flex-basis:9rem}
+  .sitefoot{padding:var(--sp-4)}
   .workspace{display:block}
   .content{padding:var(--sp-5)}
   .intro h2{font-size:var(--fs-2xl)}
@@ -1188,22 +1750,13 @@ input[type=checkbox]{accent-color:var(--accent)}
   .definition-card{min-width:0}
   .paper-detail{border-top:1px solid var(--line)}
   .paper-detail h2{font-size:var(--fs-2xl)}
-  .paper-index{
-    border-right:0;
-    border-bottom:1px solid var(--line);
-  }
+  .paper-index{border-right:0;border-bottom:1px solid var(--line)}
   .trace-toolbar select{max-width:15rem}
+  .graph-workspace{padding:var(--sp-4)}
   .graph-layout{display:flex;flex-direction:column}
-  .graph-canvas{
-    height:62vh;
-    min-height:28rem;
-    max-height:62vh;
-  }
-  .graph-detail{
-    border-left:0;
-    border-top:1px solid var(--line);
-    max-height:none;
-  }
+  .canvas-wrap{width:100%}
+  .graph-canvas{height:60vh;min-height:24rem;max-height:60vh}
+  .graph-detail{border-left:0;border-top:1px solid var(--line);max-height:none}
   .graph-detail h2{font-size:var(--fs-2xl)}
   .graph-heading-row{gap:var(--sp-4)}
   .graph-control{white-space:normal}
@@ -1212,53 +1765,66 @@ input[type=checkbox]{accent-color:var(--accent)}
   .graph-search-wrap{flex-basis:100%}
   .graph-statusbar #graph-count{flex-basis:100%}
   #graph-node-list{display:block}
+  .legend{
+    position:static;
+    max-width:none;
+    margin:var(--sp-3);
+    background:var(--panel);
+    backdrop-filter:none;
+  }
+  .canvas-wrap{flex-direction:column}
+  .fab{position:static;padding:0 var(--sp-3) var(--sp-3)}
+  .hint{display:none}
 }
 
 /* =============================================================================
-   §18  LARGE-TEXT MODE (text scale ≥ 150%)
+   §21  LARGE-TEXT MODE (text scale ≥ 150%)
    ========================================================================== */
 /* Column layouts stop being usable well before the text stops growing, so the
    same stacking the 760px breakpoint uses is applied at any viewport width. */
 
 .large-text .workspace{grid-template-columns:minmax(12rem,17rem) minmax(0,1fr)}
 .large-text .graph-layout{display:flex;flex-direction:column}
+.large-text .canvas-wrap{flex-direction:column;width:100%}
 .large-text .graph-canvas{height:70vh;min-height:18rem}
-.large-text .graph-detail{
-  max-height:none;
-  border-left:0;
-  border-top:1px solid var(--line);
+.large-text .graph-detail{max-height:none;border-left:0;border-top:1px solid var(--line)}
+.large-text .paper-detail{border-left:0;border-top:1px solid var(--line)}
+.large-text .legend{
+  position:static;
+  max-width:none;
+  margin:var(--sp-3);
+  background:var(--panel);
+  backdrop-filter:none;
 }
-.large-text .paper-detail{
-  border-left:0;
-  border-top:1px solid var(--line);
-}
+.large-text .fab{position:static;padding:0 var(--sp-3) var(--sp-3)}
+.large-text .hint{display:none}
+.large-text .brand .scopecaveat{max-width:none}
+.large-text .topbar .stats{margin-left:0}
 
 /* =============================================================================
-   §19  REDUCED MOTION
+   §22  REDUCED MOTION AND PRINT
    ========================================================================== */
 
 @media(prefers-reduced-motion:reduce){
-  button{transition:none}
+  button,
+  .proof-node rect.card{transition:none}
 }
-
-/* =============================================================================
-   §20  PRINT
-   ========================================================================== */
 
 @media print{
   .topbar,
-  .scope-strip,
+  .proofmap,
+  .sitefoot,
   .graph-workspace,
   .trace-loading{display:none!important}
-  body{background:var(--panel);color:var(--ink)}
+  body{background:#fff;color:#000}
   .intro,
   .section-card,
   .paper-card,
   .notice,
   .codeblock{
-    background:var(--panel);
-    color:var(--ink);
-    border-color:var(--line-strong);
+    background:#fff;
+    color:#000;
+    border-color:#888;
     box-shadow:none;
   }
   .paper-page{box-shadow:none}

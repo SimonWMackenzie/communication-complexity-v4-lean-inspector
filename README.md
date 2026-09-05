@@ -82,7 +82,7 @@ group counts distinguish module arrows from declaration-reference pairs.
 
 ## Design revision, 6 September 2026
 
-The interface was unified into one token-driven light design system
+The interface was unified into one token-driven design system
 (`design.css`: one type scale, one radius scale, one control height, one
 focus ring, one list-row and one badge component shared by the paper, graph
 and Lean views; `trace.css` now carries layout only). Overlapping paper
@@ -94,6 +94,46 @@ unchanged; the trimming is presentation only and is stated in the detail
 panel. Measured on all 372 recorded locations: 56 overlapping pairs on 27
 pages before, 0 visible overlaps after, with every box keeping at least 39%
 of its recorded height. Metadata text now meets WCAG AA contrast.
+
+## Provenance revision
+
+The design system was then reworked to match the published NP-hardness
+"Formal Proof Explorer" (dark console, mono eyebrows, glass panels, pill
+groups, SVG statement cards), and provenance was made visible at every level.
+
+Colour carries origin and nothing else; kind is a mono badge. There are five
+origins, read off each declaration's Lean module:
+
+| Origin | Modules | In the root closure |
+| --- | --- | --- |
+| Proved in Lean, this paper | `EthInapproximability.V4.*` | 3,753 |
+| Reused, companion paper's Lean | `NPCC.*`, `Workspace.*`, `EthBridge.*`, `LegacyNPCC.*` | 390 |
+| Reused, earlier route here | `EthInapproximability.ParameterizedNP.*` | 1,408 |
+| Library | Mathlib, Lean core, Batteries | 1,175 |
+| External input | none — not proved in Lean | 2 |
+
+The companion paper is Gaspers, He and Mackenzie, *NP-Completeness of
+Deterministic Communication Complexity via Relaxed Interlacing* (companion
+manuscript, 2026); its Lean formalization is vendored here and compiles as
+part of this build.
+
+The two external inputs are named wherever they appear: the **composed source
+theorem** (formal Assumption 4.1 / reader §2.2), whose intended source is the
+companion construction, and the **balanced-family theorem** (formal Theorem
+4.4 and Appendix D / reader §2.3), proved on paper in this paper and
+deliberately kept outside Lean. Both enter the root theorem as explicit
+hypotheses. The root's audited axiom footprint, quoted from the published
+verification log, is `propext · Classical.choice · Quot.sound`; the companion
+layer's own balanced-family citation axiom is not in it.
+
+Each map step also reports how many companion-paper declarations its Lean
+components reach through recorded source references, and lists them by name
+and module. The Lean source view colours every card and module group by
+origin and can filter by it; the Lean inspector shows an origin badge and a
+coloured tick per navigation row; the paper tracer's highlight colours follow
+the correspondence classification and are explained by a key above the pages.
+
+The landing view is the mathematical proof map.
 
 The user approved browser testing. test_browser.cjs runs an isolated headless
 browser against the local preview and covers paper tracing, definition cards,
