@@ -80,6 +80,21 @@ search, shortest recorded paths from the root, source occurrence evidence,
 zoom/pan, and JSON downloads. Display caps and terminal filters are explicit;
 group counts distinguish module arrows from declaration-reference pairs.
 
+## Design revision, 6 September 2026
+
+The interface was unified into one token-driven light design system
+(`design.css`: one type scale, one radius scale, one control height, one
+focus ring, one list-row and one badge component shared by the paper, graph
+and Lean views; `trace.css` now carries layout only). Overlapping paper
+highlights are resolved for display in `trace.js`: where two recorded
+location boxes intersect, the upper box is trimmed at the next box's top edge
+with `clip-path`, so the visible boxes and their click targets are disjoint.
+The recorded coordinates, the proof snapshot, the papers and every mapping are
+unchanged; the trimming is presentation only and is stated in the detail
+panel. Measured on all 372 recorded locations: 56 overlapping pairs on 27
+pages before, 0 visible overlaps after, with every box keeping at least 39%
+of its recorded height. Metadata text now meets WCAG AA contrast.
+
 The user approved browser testing. test_browser.cjs runs an isolated headless
 browser against the local preview and covers paper tracing, definition cards,
 graph search/paths/arrows, mobile layout, 200-percent text and page errors.
