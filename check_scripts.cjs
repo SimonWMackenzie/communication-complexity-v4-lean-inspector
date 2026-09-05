@@ -8,4 +8,5 @@ for(const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)){
 }
 if(!count)throw new Error('No application script found');
 new vm.Script(fs.readFileSync('trace.js','utf8'),{filename:'trace.js'});
-console.log('JavaScript syntax PASS: '+count+' inline application script and paper tracing.');
+for(const file of ['graph.js','graph-core.js'])new vm.Script(fs.readFileSync(file,'utf8'),{filename:file});
+console.log('JavaScript syntax PASS: '+count+' inline application script, paper tracing and dependency explorer.');

@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "success": true,
+  "edition": "2026-09-06-conference-reader",
+  "baseCommit": "78231fe1d9e0ab6930d0b1e473e740f39e4b8254",
+  "proofCommit": "4644d0a32945c2214592c497edc5872961dc8bda",
+  "scope": "Editorial preservation, matching explicit inherited definitions, and strict PDF build checks. Not a new Lean proof audit.",
+  "comparisons": [
+    {
+      "paper": "reader",
+      "oldDisplayedBlocks": 122,
+      "newDisplayedBlocks": 125,
+      "preservedLabels": 133,
+      "addedDefinitions": [
+        "eq:reader-dominant-fraction",
+        "eq:reader-hard-seed-threshold",
+        "eq:reader-projection-exponents"
+      ]
+    },
+    {
+      "paper": "formal",
+      "oldDisplayedBlocks": 227,
+      "newDisplayedBlocks": 230,
+      "preservedLabels": 234,
+      "addedDefinitions": [
+        "eq:dominant-fraction",
+        "eq:hard-seed-threshold",
+        "eq:projection-exponents"
+      ]
+    }
+  ],
+  "papers": [
+    {
+      "id": "reader",
+      "path": "routes/parameterized-np/reader-facing/artifacts/ETH_INAPPROXIMABILITY_PARAMETERIZED_NP_READER.pdf",
+      "pages": 24,
+      "pdfSha256": "e019cd9f9faee46a75d3cd78701b4297a53022f49c3839e455aa94ef5cb9af38",
+      "auxSha256": "482d8778f2b93e75fd36b6a25fade9b7c2411fb36cbbbe375198fc5f4b44f198",
+      "buildLogSha256": "2eda6c8771e50a9a2e744d85d59cf09eb854c73218b70aa4c3fefc9acc4be093"
+    },
+    {
+      "id": "formal",
+      "path": "routes/parameterized-np/autoformalization/artifacts/ETH_INAPPROXIMABILITY_PARAMETERIZED_NP_AUTOFORMALIZATION.pdf",
+      "pages": 53,
+      "pdfSha256": "d1a19fedb625f2b3eddd88499afd35fa165d8a9fb42563a96956a5d507a9d3ce",
+      "auxSha256": "5caf2d76be6b17fe840037cf6cd462fabc282866feda1ec792ec7c8987d8e4ca",
+      "buildLogSha256": "ce07d8531cf7551c123c539f9ede03b80fd04f3708295174dd3466d45d90e842"
+    }
+  ],
+  "source_hashes": {
+    "routes/parameterized-np/reader-facing/main.tex": "f4d3bb9d3468041ce5a2ee2b80406daa5e4514eabbc1520a91705e6c57b094d9",
+    "routes/parameterized-np/reader-facing/preamble.tex": "a112beda44da5fe15943ac7b8698ecfb187b5d1e871d2003afa36ab0e091125d",
+    "routes/parameterized-np/reader-facing/references.bib": "9130edfb0b7185c3b9cf2ef400250eb2edb723763722833e0337d7e6c6a9391f",
+    "routes/parameterized-np/reader-facing/sections/01-introduction.tex": "4106fe448e4e935ff8a6163688ba4c42da390f75d2156e6c7c543b4e4fde6394",
+    "routes/parameterized-np/reader-facing/sections/02-preliminaries.tex": "da81fd2ff59403e594892e56598b2785c667ed655ed929b0466a782d9b7f475c",
+    "routes/parameterized-np/reader-facing/sections/03-parameterized-construction.tex": "7d6fd73ec11d4b4c9e71d020ce17994b981aab0a022cc6aa88096a598c0dbedd",
+    "routes/parameterized-np/reader-facing/sections/04-bridge.tex": "3ab67768931f2cca0e808bc6faa259ac353c489bd203db3304585406d7ded822",
+    "routes/parameterized-np/reader-facing/sections/05-iteration.tex": "653c7d03277f5bd51ad6c0733539311f9646a995db55ffb021fcc50550f965d8",
+    "routes/parameterized-np/reader-facing/sections/06-assembly.tex": "171c03d75375331277a9c6abf2c6561ada7905c2565096a00f07ef08c12a15ee",
+    "routes/parameterized-np/reader-facing/sections/A-stage4-details.tex": "0cda5d0f73002a86daa2addd3734c016c2e1c07c9908d3932cbf3c78f88a3853",
+    "routes/parameterized-np/reader-facing/sections/B-bridge-details.tex": "ca2675a12cd2ed0dc871c4f54611009852c45e93ce370b25d79d94714e451f5d",
+    "routes/parameterized-np/reader-facing/sections/C-quantitative-details.tex": "c2ce52ca03ac570419721e51c5341a9666702cf47230a1bf54e336594144cc9c",
+    "routes/parameterized-np/autoformalization/main.tex": "cbad0ba5185bf1a3e9221edd6b99fbeb40a420723b3fe8ecb2432e17f70a938f",
+    "routes/parameterized-np/autoformalization/preamble.tex": "78eccbc84384363293c445fe7ccc7d600ac51756265f77e3f97429d6dcd6391c",
+    "routes/parameterized-np/autoformalization/references.bib": "116f959f982db4ab07ade1fdb8519b48fdb8ba36c355df493f2b041d81384323",
+    "routes/parameterized-np/autoformalization/sections/01-introduction.tex": "b96f5154b489dc690c141ecf381cebd45a18ffe21a02375b2c8149aa0d1b107b",
+    "routes/parameterized-np/autoformalization/sections/02-mechanical-contract.tex": "b4185bfc8e4c0e52555788293f1c33411f435fa9d0f9a4c371cc023fea1c2675",
+    "routes/parameterized-np/autoformalization/sections/03-preliminaries.tex": "9e916f49175fa71fe7b967d4ef4c70b2819b217d67ce576f3e9d1bac7e6b4b63",
+    "routes/parameterized-np/autoformalization/sections/04-guarded-source.tex": "7161ee117282379d4d0cd44ee97ef13d332e48a82e4bd4039a69e0db54c5aaba",
+    "routes/parameterized-np/autoformalization/sections/05-public-records.tex": "64481dc0317b570a6d4e762d562b3c4c67b48fa1fc7e108b5638f12c64d549a3",
+    "routes/parameterized-np/autoformalization/sections/06-parameter-schedule.tex": "96e8111153a473a9a1c22adaabeddf811e1c7360cf0128be21cbb87abee569cb",
+    "routes/parameterized-np/autoformalization/sections/07-one-level-construction.tex": "74f455e150dc9a07dbb072cc5eb4bd9298f2ef6fb97fe02c9e04c7fbf6ded3f0",
+    "routes/parameterized-np/autoformalization/sections/08-dense-stage4.tex": "1ed0b27ebedab4ce93b8ff4718835accc5fd8af5363d66cbc6250f48b1376775",
+    "routes/parameterized-np/autoformalization/sections/09-first-wrapper.tex": "db5878359f32625a871b2f47cfaf65a7f88558826ff5a7ffa8ea7a9ed08cb84f",
+    "routes/parameterized-np/autoformalization/sections/10-direct-bridge.tex": "b04f6699d94e340293ac803804657ac2a43d66a3aa8781b84ac61b583a3608d2",
+    "routes/parameterized-np/autoformalization/sections/11-one-level-assembly.tex": "f9fa510f61932b84279ffbf43d34dd8edba273dc27b21f494ddc6eb8811b5cdf",
+    "routes/parameterized-np/autoformalization/sections/12-iteration-specification.tex": "07876088d586d4d716d57216dfe2bcc996d87fcbe2c14e076dc4d85e0c17cfea",
+    "routes/parameterized-np/autoformalization/sections/13-iteration-assembly.tex": "e565f538c3a2b9dd5babc271f3c797b32eeafefab5ce2c2953eb48b83d4b0cae",
+    "routes/parameterized-np/autoformalization/sections/14-final-consequence.tex": "90b5453cbe8e30405ad87ce479dcfad97337ec85ecda19d5092353cdd9c7986d",
+    "routes/parameterized-np/autoformalization/sections/15-evidence-and-promotion.tex": "ba4fb047010fdec4044018213043d1b3b1839e80b7bf6bdcc6fee984a69263d9",
+    "routes/parameterized-np/autoformalization/sections/A-certified-stopping.tex": "c14b2a53289c8819fafc85270ec5e017a26905e45364d8d9780a905aeae0eb94",
+    "routes/parameterized-np/autoformalization/sections/B-arithmetic-gates.tex": "b2e5fffae4c27c28dafaa57ab0f76db19b032a7b78d591dc0cb51aa6849cc436",
+    "routes/parameterized-np/autoformalization/sections/C-dependency-audit.tex": "34eedea1e21f8d95805429ee8c378d0969de98a33bc1c0cfdb8586cae674565f",
+    "routes/parameterized-np/autoformalization/sections/D-inherited-contracts.tex": "6f60c13104bd5e7ab72d67b2501a679990d4c7917d89baac3e5e2fa64950602b",
+    "routes/parameterized-np/autoformalization/sections/E-certificate-registry.tex": "81aee295ed44b167bb3d2a8d0b0fd5dd7a669b0fce5925707ce5e026fa07f12e"
+  },
+  "manuscript_hashes": {
+    "routes/parameterized-np/reader-facing/artifacts/ETH_INAPPROXIMABILITY_PARAMETERIZED_NP_READER.pdf": "e019cd9f9faee46a75d3cd78701b4297a53022f49c3839e455aa94ef5cb9af38",
+    "routes/parameterized-np/autoformalization/artifacts/ETH_INAPPROXIMABILITY_PARAMETERIZED_NP_AUTOFORMALIZATION.pdf": "d1a19fedb625f2b3eddd88499afd35fa165d8a9fb42563a96956a5d507a9d3ce"
+  }
+}

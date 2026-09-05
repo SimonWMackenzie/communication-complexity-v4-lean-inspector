@@ -2,12 +2,20 @@
   "schemaVersion": 1,
   "proofCommit": "4644d0a32945c2214592c497edc5872961dc8bda",
   "sourceSnapshotSha256": "407ea7f19b300704132d20db8d1fdb41212678da5787733e4e59b249dccec913",
-  "proofPayloadSha256": "d6bc8eb5aadba7aadfbc5891702643451bd42b7172d8c6f70d9c6b1ccf6c6476",
-  "proofPayloadBytes": 13914798,
-  "anchorCount": 366,
-  "mappedAnchorCount": 93,
-  "leanLinkedAnchorCount": 92,
-  "renderedPages": 75,
+  "proofPayloadSha256": "f2a4365aa149099cee68a96233bc52cb7901a678af18c1254e7f2c1026b52dcc",
+  "proofPayloadBytes": 13918768,
+  "anchorCount": 372,
+  "mappedAnchorCount": 99,
+  "leanLinkedAnchorCount": 98,
+  "renderedPages": 77,
   "originalProofVerificationReportSha256": "c301bd09b62706e63bb65f5553a3cad5b468aef03525c1f66219c121a9d91771",
-  "scope": "Finite gap and same-matrix size only; external source/family existence remains external."
+  "scope": "Finite gap and same-matrix size only; external source/family existence remains external.",
+  "paperRevision": {
+    "edition": "2026-09-06-conference-reader",
+    "receiptSha256": "e24c7f1b62c1ee0eda2ba759e870812f13b44a00efb22e768b830f2952718347",
+    "pages": {
+      "reader": 24,
+      "formal": 53
+    }
+  }
 }

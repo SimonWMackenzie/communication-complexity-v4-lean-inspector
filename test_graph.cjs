@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),zlib=require('node:zlib'),G=require('./graph-core.js');
+const d=json=>JSON.parse(fs.readFileSync(json,'utf8'));
+const data=JSON.parse(zlib.gunzipSync(fs.readFileSync('inputs/proof-data.json.gz')));
+const g=G.index(data),root=data.root,reachable=G.walk(g,root);let checks=0;
+const check=(name,fn)=>{fn();checks++;console.log('PASS '+name);};
+check('full graph resolves',()=>assert.equal(g.cards.size,12815));
+check('root closure is explicit',()=>assert.equal(reachable.size,6726));
+check('cyclic traversal terminates',()=>{const x=G.index({root:'a',declarations:[{id:'a',source:'a',dependencies:['b']},{id:'b',source:'b',dependencies:['a']}]});assert.equal(G.walk(x,'a').size,2);assert.deepEqual(G.path(x,'b','a'),['b','a']);});
+check('invalid graph target fails closed',()=>assert.throws(()=>G.index({declarations:[{id:'a',dependencies:['missing']}]})));
+check('every reverse edge is exact',()=>{for(const [id,deps]of g.out)for(const target of deps)assert.ok(g.incoming.get(target).includes(id));});
+check('limit is reported, not a false terminal',()=>{const v=G.view(g,root,{depth:Infinity,limit:20,libraries:true});assert.equal(v.nodes.length,20);assert.equal(v.hiddenGroups,reachable.size-20);assert.ok(v.hiddenEdges>0);});
+check('filtered cards remain in reachability count',()=>{const v=G.view(g,root,{depth:Infinity,limit:20,libraries:false});assert.equal(v.reached,reachable.size);assert.ok(v.filteredCards>0);});
+check('group counts preserve eligible declarations',()=>{const v=G.view(g,root,{depth:Infinity,limit:Infinity,grouped:true,libraries:true});assert.equal(v.nodes.reduce((n,x)=>n+x.members.length,0),reachable.size);});
+check('shortest path consists only of recorded edges',()=>{const target=[...reachable.keys()].at(-1),p=G.path(g,root,target);assert.ok(p);for(let i=1;i<p.length;i++)assert.ok(g.out.get(p[i-1]).includes(p[i]));});
+check('unreachable is distinct from omitted',()=>{const target=[...g.cards.keys()].find(x=>!reachable.has(x));assert.equal(G.path(g,root,target),null);});
+check('layered layout never overlaps nodes',()=>{const v=G.view(g,root,{depth:3,limit:100,libraries:true}),l=G.layout(v.nodes);for(let i=0;i<v.nodes.length;i++)for(let j=i+1;j<v.nodes.length;j++){const a=l.positions.get(v.nodes[i].id),b=l.positions.get(v.nodes[j].id);assert.ok(a.x+a.width<=b.x||b.x+b.width<=a.x||a.y+a.height<=b.y||b.y+b.height<=a.y);}});
+if(fs.existsSync('dist/proof-map.json'))check('curated map links and arrows resolve',()=>{const map=d('dist/proof-map.json'),ids=new Set(map.nodes.map(n=>n.id)),anchors=new Set(data.trace.anchors.map(a=>a.id));assert.equal(map.kind,'curated-mathematical-overview');for(const n of map.nodes){for(const id of n.lean)assert.ok(g.cards.has(id),id);for(const id of n.paperAnchors)assert.ok(anchors.has(id),id);}for(const e of map.edges){assert.ok(ids.has(e.source));assert.ok(ids.has(e.target));assert.ok(e.meaning);}});
+console.log(checks+' graph tests passed.');

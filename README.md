@@ -21,8 +21,8 @@ reviewed update, not silently reading a different proof.
 
 ## Scope and evidence
 
-- All 75 pages of the two current papers are rendered from their exact PDFs.
-- 92 curated anchors link to existing compiled Lean declaration identifiers;
+- All 77 pages of the two current papers are rendered from their exact PDFs.
+- 98 curated anchors link to existing compiled Lean declaration identifiers;
   one further curated entry identifies contextual evidence rather than a theorem.
 - The complete compiled PDF anchor index also exposes locations without
   curated counterparts, clearly labelled as such rather than hidden.
@@ -51,3 +51,26 @@ region review images and is excluded from both Git and the published site.
 The design reference was the NP-hardness inspector's v2-final: prerendered
 paper pages, normalized highlight rectangles, source/definition cards and
 reverse navigation. That repository was read without modification.
+
+## Conference edition and dependency explorer
+
+The revised reader has 24 pages; the matching formal paper has 53.
+The original Lean snapshot is unchanged. The separate paper revision receipt
+records the newer paper bytes, preserving the historical proof audit as-is.
+To refresh papers, pass the verified receipt with
+prepare_snapshot.py --paper-receipt; this never permits changes outside the
+two manuscript directories or waives the old Lean hash checks.
+
+Dependency graph opens a 14-step mathematical map with explicit outside inputs.
+Its arrows are curated mathematical explanations. The separate Lean source
+view traverses the complete compiler-recorded name-reference index. It supports
+incoming/outgoing traversal, arbitrary reachable depth, module grouping,
+search, shortest recorded paths from the root, source occurrence evidence,
+zoom/pan, and JSON downloads. Display caps and terminal filters are explicit;
+group counts distinguish module arrows from declaration-reference pairs.
+
+The user approved browser testing. test_browser.cjs runs an isolated headless
+browser against the local preview and covers paper tracing, definition cards,
+graph search/paths/arrows, mobile layout, 200-percent text and page errors.
+Pass the installed Playwright module path as its first argument when needed.
+Run node test_graph.cjs for the pure graph-data tests as well.

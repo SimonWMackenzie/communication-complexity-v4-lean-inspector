@@ -131,7 +131,7 @@ def verified_statement_location(pdf, record, page_number, top):
     require(len(matches) == 1, f"Expected one printed header for {record['label']}: {matches}")
     return *matches[0], header
 
-def prepare(repo, snapshot, mapping_files):
+def prepare(repo, snapshot, mapping_files, paper_receipt=None):
     require(digest(snapshot) == PROOF_SHA, "Unexpected original inspector snapshot")
     html = snapshot.read_text(encoding="utf-8")
     match = re.search(r'<script id="inspector-data" type="application/json">(.*?)</script>', html, re.S)
@@ -139,10 +139,20 @@ def prepare(repo, snapshot, mapping_files):
     data = json.loads(match.group(1))
     report = data["meta"]["verification"]["report"]
     require(report["success"] and len(report["steps"]) == 15, "Incomplete proof verification")
+    revision = json.loads(paper_receipt.read_text(encoding="utf-8")) if paper_receipt else None
+    if revision:
+        require(revision["success"] and revision["proofCommit"] == data["meta"]["git"], "Invalid paper revision receipt")
+        require({p["id"] for p in revision["papers"]} == {"reader", "formal"}, "Both paper receipts required")
+        for rel, expected in {**revision["source_hashes"], **revision["manuscript_hashes"]}.items():
+            require(rel.startswith(("routes/parameterized-np/reader-facing/", "routes/parameterized-np/autoformalization/")), "Revision changes something outside the papers")
+            require(digest(repo / rel) == expected.lower(), "Revised paper receipt mismatch: " + rel)
     for rel, expected in report["source_hashes"].items():
+        if revision and rel in revision["source_hashes"]:
+            continue
         require(digest(repo / rel) == expected.lower(), "Proof/paper source changed: " + rel)
     for rel, expected in report["manuscript_hashes"].items():
-        require(digest(repo / rel) == expected.lower(), "Paper changed: " + rel)
+        revised_hash = revision["manuscript_hashes"].get(rel) if revision else None
+        require(digest(repo / rel) == (revised_hash or expected).lower(), "Paper changed without receipt: " + rel)
     mappings = []
     for path in mapping_files:
         mappings.extend(json.loads(path.read_text(encoding="utf-8-sig")))
@@ -165,12 +175,17 @@ def prepare(repo, snapshot, mapping_files):
         directory = pdf_path.parent.parent
         aux_path = directory / "build/main.aux"
         aux_text = aux_path.read_text(encoding="utf-8-sig")
+        if revision:
+            revised_paper = next(p for p in revision["papers"] if p["id"] == paper_id)
+            require(digest(aux_path) == revised_paper["auxSha256"], "AUX differs from reviewed build")
         src_labels = locate_label_sources(directory)
         paper_dir = inputs / "papers" / paper_id
         paper_dir.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(pdf_path, paper_dir / "paper.pdf")
         shutil.copyfile(aux_path, paper_dir / "labels.aux")
         reader = PdfReader(pdf_path)
+        if revision:
+            require(len(reader.pages) == revised_paper["pages"], "Paper revision page count differs")
         destinations = reader.named_destinations
         page_records = []
         with tempfile.TemporaryDirectory(prefix="v4-paper-pages-") as temporary:
@@ -226,6 +241,10 @@ def prepare(repo, snapshot, mapping_files):
         paper.pop("dataUrl", None)
         paper["href"] = f"papers/{paper_id}/paper.pdf"
         paper["downloadName"] = paper_id + "-paper.pdf"
+        if revision:
+            paper["sha256"] = digest(pdf_path)
+            paper["bytes"] = pdf_path.stat().st_size
+            paper["paperRevision"] = revision["edition"]
     found = {(a["paperId"], a["label"]) for a in trace["anchors"]}
     require(set(by_anchor) <= found, "Mapped labels have no compiled PDF destinations: " + repr(set(by_anchor) - found))
     trace["anchors"].sort(key=lambda a: (a["paperId"], a["page"], a["rectangles"][0]["y0"], a["label"]))
@@ -243,6 +262,10 @@ def prepare(repo, snapshot, mapping_files):
     data["meta"]["publicEdition"] = {"originalOfflineArtifactSha256": PROOF_SHA,
         "evidenceNotice": "The original full report hash is retained. The displayed report is a public extract; machine-local command lines and non-axiom operational log bodies are omitted. No Lean source or mathematical statement was changed.",
         "paperTrace": "Compiled PDF destinations locate labels; printed numbered statement headers verify and correct page-break locations. Human-reviewed label/declaration mappings determine mathematical correspondence, which is not itself kernel-checked."}
+    if revision:
+        data["meta"]["paperRevision"] = {"receiptSha256": digest(paper_receipt), "receipt": revision,
+            "notice": "The papers were editorially revised after the unchanged Lean proof snapshot. This separate source/PDF receipt covers the revised papers; the older proof verification report covers the earlier paper bytes, not these PDFs."}
+        data["meta"]["publicEdition"]["evidenceNotice"] += " A separate paper-revision receipt identifies the new manuscript bytes; the original proof report is historical evidence for the unchanged Lean snapshot."
     data["trace"] = trace
     compressed = gzip.compress(json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), mtime=0)
     (inputs / "proof-data.json.gz").write_bytes(compressed)
@@ -255,6 +278,10 @@ def prepare(repo, snapshot, mapping_files):
                 "renderedPages": sum(len(p["pages"]) for p in trace["papers"]),
                 "originalProofVerificationReportSha256": verification["reportSha256"],
                 "scope": "Finite gap and same-matrix size only; external source/family existence remains external."}
+    if revision:
+        manifest["paperRevision"] = {"edition": revision["edition"], "receiptSha256": digest(paper_receipt),
+                                     "pages": {p["id"]: p["pages"] for p in revision["papers"]}}
+        shutil.copyfile(paper_receipt, inputs / "paper-revision.json")
     (inputs / "snapshot.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     # PDF-region review sheets are local QA, never public website assets.
     qa = ROOT / "qa"
@@ -276,5 +303,6 @@ if __name__ == "__main__":
     parser.add_argument("--repo", required=True, type=Path)
     parser.add_argument("--snapshot", required=True, type=Path)
     parser.add_argument("--mappings", nargs="+", required=True, type=Path)
+    parser.add_argument("--paper-receipt", type=Path)
     args = parser.parse_args()
-    prepare(args.repo.resolve(), args.snapshot.resolve(), args.mappings)
+    prepare(args.repo.resolve(), args.snapshot.resolve(), args.mappings, args.paper_receipt)

@@ -1,6 +1,66 @@
 [
   {
     "paperId": "reader",
+    "label": "eq:reader-projection-exponents",
+    "lean": [
+      "EthInapproximability.V4.FiniteProjectionCoverCore.coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BRef_eq_coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BSing_eq_coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BPair_eq_coverExponent"
+    ],
+    "classification": "definition",
+    "note": "The minimum positive exponent and its three fixed specializations are explicit in Lean. These define the projection-cover parameters; the surrounding counting argument is assembled elsewhere."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:projection-exponents",
+    "lean": [
+      "EthInapproximability.V4.FiniteProjectionCoverCore.coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BRef_eq_coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BSing_eq_coverExponent",
+      "EthInapproximability.V4.FiniteCanonicalProjectionCoverBudget.BPair_eq_coverExponent"
+    ],
+    "classification": "definition",
+    "note": "The minimum positive exponent and its three fixed specializations are explicit in Lean. These define the projection-cover parameters; the surrounding counting argument is assembled elsewhere."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-hard-seed-threshold",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.HardSeedFacade.mHS"
+    ],
+    "classification": "definition",
+    "note": "The inherited definition takes the least uniform exponent threshold for the hard-seed theorem at copy-depth 5 and margin 1/10. It is an exponent threshold, not the corresponding power-of-two width."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:hard-seed-threshold",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.HardSeedFacade.mHS"
+    ],
+    "classification": "definition",
+    "note": "The inherited definition takes the least uniform exponent threshold for the hard-seed theorem at copy-depth 5 and margin 1/10. It is an exponent threshold, not the corresponding power-of-two width."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-dominant-fraction",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.DenseStageFourOpening.xDom"
+    ],
+    "classification": "definition",
+    "note": "This is the inherited dominant-block lower-bound fraction, specialized to the fixed template loss 1/1000. The displayed denominator is the indexed Stage-2 family size, not the row count of the entire protected matrix."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:dominant-fraction",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.DenseStageFourOpening.xDom"
+    ],
+    "classification": "definition",
+    "note": "This is the inherited dominant-block lower-bound fraction, specialized to the fixed template loss 1/1000. The displayed denominator is the indexed Stage-2 family size, not the row count of the entire protected matrix."
+  },
+  {
+    "paperId": "reader",
     "label": "thm:reader-main",
     "lean": [
       "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",

@@ -8,8 +8,13 @@ import shutil
 ROOT = Path(__file__).resolve().parent
 
 def transform(template):
-    template = template.replace('</head>', '<link rel="stylesheet" href="trace.css">\n</head>')
-    template = template.replace('<script id="inspector-data" type="application/json">__INSPECTOR_DATA__</script>', '<script src="trace.js"></script>')
+    template = template.replace('</head>', '<link rel="stylesheet" href="trace.css">\n<link rel="stylesheet" href="design.css">\n</head>')
+    template = template.replace('name="color-scheme" content="dark"', 'name="color-scheme" content="light"')
+    template = template.replace('saved<=180', 'saved<=200').replace('scale>=180', 'scale>=200').replace('Math.min(180,scale+10)', 'Math.min(200,scale+10)')
+    template = template.replace('function applyScale(){', 'function applyScale(){document.documentElement.classList.toggle("large-text",scale>=150);')
+    template = template.replace('Communication complexity / V4', 'Communication complexity')
+    template = template.replace('Finite gap and size · Lean inspector</h1>', 'A communication gap, formally proved</h1>')
+    template = template.replace('<script id="inspector-data" type="application/json">__INSPECTOR_DATA__</script>', '<script src="trace.js"></script>\n<script src="graph-core.js"></script>\n<script src="graph.js"></script>')
     template = template.replace('(() => {', '(async () => {', 1)
     old = 'try { DATA = JSON.parse($("inspector-data").textContent);'
     new = '''try {
@@ -32,6 +37,9 @@ def transform(template):
     template = template.replace(old_end, new_end, 1)
     for fn in ('renderStatement', 'renderSource'):
         template = template.replace('function ' + fn + '(d,host) {', 'function ' + fn + '(d,host) {\n    if(window.V4Trace)window.V4Trace.addLinks(d,host);', 1)
+    template = template.replace('function renderProvenance(d,host) {', 'function renderProvenance(d,host) {\n    if(meta.paperRevision){const revision=section(host,"Revised paper edition");revision.append(el("p","notice",meta.paperRevision.notice));const a=el("a",null,"Download the separate paper source/PDF receipt");a.href="paper-revision.json";revision.append(a);renderValue({edition:meta.paperRevision.receipt.edition,receiptSha256:meta.paperRevision.receiptSha256,scope:meta.paperRevision.receipt.scope,papers:meta.paperRevision.receipt.papers},revision);}', 1)
+    template = template.replace('Recorded manuscript correspondence for this declaration', 'Original proof-snapshot manuscript annotations (historical)')
+    template = template.replace('function renderDependencies(d,host) {', 'function renderDependencies(d,host) {\n    if(window.V4Graph)host.append(button("Open dependency explorer",()=>window.V4Graph.open("source",d.id)));', 1)
     template = template.replace('    setTab(currentTab);', '    setTab(currentTab);\n    document.dispatchEvent(new CustomEvent("v4-declaration-selected", {detail: {id:d.id}}));', 1)
     template = template.replace('This is a self-contained, offline reading aid.', 'This is a public reading aid for a pinned proof-and-paper snapshot.')
     template = template.replace('No network request is needed to use the inspector.', 'The papers and compressed proof index are served with this site.')
@@ -49,10 +57,23 @@ def build():
     assert actual == snapshot['proofPayloadSha256'], 'Snapshot payload changed'
     html = transform((ROOT / 'template.html').read_text(encoding='utf-8'))
     (dist / 'index.html').write_text(html, encoding='utf-8', newline='\n')
-    for name in ('trace.js', 'trace.css'):
+    for name in ('trace.js', 'trace.css', 'design.css', 'graph-core.js', 'graph.js'):
         shutil.copyfile(ROOT / name, dist / name)
+    overview=json.loads((ROOT/'proof-map.json').read_text(encoding='utf-8'))
+    anchors={a['id']:a for a in data['trace']['anchors']}
+    names={d['id'] for d in data['declarations']}
+    ids={n['id'] for n in overview['nodes']}
+    assert len(ids)==len(overview['nodes']), 'Duplicate mathematical map node'
+    for node in overview['nodes']:
+        assert all(a in anchors for a in node['paperAnchors']), node['id']
+        node['lean']=list(dict.fromkeys(name for a in node['paperAnchors'] for name in anchors[a]['lean']))
+        assert all(name in names for name in node['lean']), node['id']
+    assert all(e['source'] in ids and e['target'] in ids for e in overview['edges'])
+    (dist/'proof-map.json').write_text(json.dumps(overview,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     shutil.copyfile(ROOT / 'inputs/proof-data.json.gz', dist / 'proof-data.json.gz')
     shutil.copyfile(ROOT / 'inputs/snapshot.json', dist / 'snapshot.json')
+    if 'paperRevision' in snapshot:
+        shutil.copyfile(ROOT / 'inputs/paper-revision.json', dist / 'paper-revision.json')
     for paper in data['trace']['papers']:
         target = dist / 'papers' / paper['id']
         target.mkdir(parents=True, exist_ok=True)
