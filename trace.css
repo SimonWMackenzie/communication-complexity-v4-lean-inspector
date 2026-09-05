@@ -1,19 +1,254 @@
-.trace-toolbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.65rem 1rem;border-bottom:1px solid var(--line);background:var(--panel)}
-.trace-toolbar label{font-size:.88rem}.trace-toolbar select,.trace-toolbar input{padding:.4rem;border:1px solid var(--line);border-radius:.35rem;background:var(--bg);color:var(--ink)}
-.trace-toolbar input{width:4.8rem}.trace-toolbar .trace-spacer{flex:1}.trace-toolbar button{font-size:.85rem}.trace-title{font-size:.9rem;color:var(--muted)}
-.paper-layout{display:grid;grid-template-columns:17rem minmax(20rem,1fr) 24rem;height:calc(100vh - 11.5rem);min-height:35rem}
-.paper-index{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:#101722}.paper-index-head{padding:.8rem;border-bottom:1px solid var(--line)}
-.paper-index-head input[type=search]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:.5rem;border-radius:.4rem;font-size:.9rem}
-.paper-index-head label{font-size:.82rem;color:var(--muted);display:block;margin:.45rem 0}.paper-index-list{overflow:auto;flex:1}.trace-index-item{display:block;width:100%;padding:.65rem .85rem;border:0;border-bottom:1px solid #243046;border-radius:0;background:transparent;text-align:left;font-size:.85rem;line-height:1.4}
-.trace-index-item[aria-current=true]{background:#262744;box-shadow:inset 3px 0 var(--accent)}.trace-index-item .meta{display:block;font-size:.75rem;color:var(--muted);margin-top:.25rem}.trace-index-count{font-size:.8rem;color:var(--muted)}
-.paper-scroll{overflow:auto;min-width:0;background:#242b36;scroll-behavior:smooth;position:relative}.paper-stack{padding:1rem;min-width:0}.paper-page{position:relative;margin:0 auto 1.2rem;background:white;box-shadow:0 4px 22px #0007;width:100%;max-width:1050px;aspect-ratio:var(--page-ratio)}
-.paper-page img{display:block;width:100%;height:100%;object-fit:contain}.paper-page figcaption{position:absolute;left:.5rem;bottom:.2rem;font-size:.7rem;background:#fff;color:#536071;padding:0 .25rem;pointer-events:none}.paper-highlight{position:absolute;border:1.5px solid #5076ce;background:#5989ec0c;padding:0;border-radius:2px;min-width:5px;z-index:2;cursor:pointer}
-.paper-highlight:hover,.paper-highlight:focus-visible{background:#507cee30;border-color:#214fba;outline:2px solid #355fd8;outline-offset:1px}.paper-highlight.selected{background:#9266e226;border:2px solid #8654d4;z-index:4;box-shadow:0 0 0 3px #b886f62b}.paper-highlight.external{border-color:#b98226;background:#dca9410b}.paper-highlight.unmapped{border-style:dotted;border-color:#8894a3;opacity:.5}
-.paper-detail{overflow:auto;min-width:0;border-left:1px solid var(--line);padding:1rem;background:var(--panel)}.paper-detail h2{font-size:1.12rem;line-height:1.4}.paper-detail p{font-size:.92rem}.trace-kind{display:inline-block;font-size:.78rem;padding:.2rem .5rem;margin:.4rem 0;border:1px solid var(--line);border-radius:.35rem;color:var(--cyan)}.trace-kind.external{color:var(--amber);border-color:#766039}.trace-kind.unmapped,.trace-kind.context{color:var(--muted)}
-.trace-lean-item{margin:.7rem 0;border:1px solid var(--line);border-radius:.45rem;padding:.65rem}.trace-lean-item .mono{font-size:.76rem;overflow-wrap:anywhere}.trace-lean-item p{font-size:.82rem;margin:.4rem 0}.trace-lean-actions{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}.trace-lean-actions button{font-size:.78rem;padding:.3rem .5rem}.trace-detail-note{border-left:2px solid var(--amber);padding:.6rem .7rem;font-size:.83rem!important;background:#231f18}
-.trace-source-links{display:flex;flex-wrap:wrap;gap:.35rem;margin:.8rem 0}.trace-source-links button{font-size:.82rem}.trace-source-links .trace-links-label{width:100%;font-size:.85rem;color:var(--cyan)}.trace-loading{padding:1rem 1.4rem;background:var(--panel);color:var(--ink);border-bottom:1px solid var(--line)}
-.trace-tooltip{font-size:.8rem;color:var(--muted);margin:.5rem 0}.trace-mobile-detail{display:none}.paper-detail details{margin:.75rem 0}.paper-detail summary{cursor:pointer;color:var(--cyan);font-size:.85rem}.paper-detail code{overflow-wrap:anywhere}.paper-empty{padding:1rem;color:var(--muted);font-size:.88rem}
-@media(min-width:1700px){.paper-layout{grid-template-columns:19rem minmax(20rem,1fr) 27rem}}
-@media(max-width:1150px){.paper-layout{grid-template-columns:14rem minmax(20rem,1fr)}.paper-detail{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);max-height:25rem}.paper-layout{height:auto}.paper-index,.paper-scroll{height:65vh;min-height:32rem}.trace-mobile-detail{display:inline-block}}
-@media(max-width:700px){.paper-layout{display:flex;flex-direction:column;min-height:0;height:auto}.paper-index{height:auto;min-height:0;max-height:15rem;border-right:0;border-bottom:1px solid var(--line)}.paper-index-list{max-height:9rem}.paper-scroll{height:65vh;min-height:25rem}.paper-detail{max-height:none}.paper-stack{padding:.5rem}.trace-toolbar{padding:.5rem;gap:.35rem}.trace-toolbar .trace-title{display:none}.trace-toolbar button{font-size:.78rem}.trace-toolbar select{max-width:11rem;font-size:.83rem}.trace-toolbar label{font-size:.78rem}.trace-spacer{display:none}.paper-page{max-width:none}.trace-lean-item .mono{font-size:.78rem}}
-@media(prefers-reduced-motion:reduce){.paper-scroll{scroll-behavior:auto}}
+/* =============================================================================
+   Paper-tracing view — STRUCTURE ONLY
+   =============================================================================
+   This sheet owns the geometry of the paper reader: grid, flow, sizing,
+   overflow, stacking. It declares no colour, background, border, shadow or
+   font size; every one of those lives in design.css, which loads after this
+   file and after template.html's base styles.
+
+   Highlight boxes are the load-bearing part. trace.js writes left/top/width/
+   height as percentages of .paper-image straight from the recorded PDF
+   rectangles, and a browser test asserts that the rendered border box still
+   equals those percentages. So nothing here may add margin, transform, inset
+   or padding to .paper-highlight, and nothing may change how those four
+   percentages are produced. Overlaps between recorded boxes are resolved by
+   clip-path (written by trace.js), which changes what is painted and what is
+   clickable while leaving the border box exactly where the data puts it.
+
+   Breakpoints are the two shared with design.css — 1250px and 760px — plus
+   the 1700px wide-screen variant.
+   ========================================================================== */
+
+/* --- Toolbar ------------------------------------------------------------- */
+
+.trace-toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.5rem;
+  padding:.75rem 1.2rem;
+}
+.trace-toolbar label{
+  display:inline-flex;
+  align-items:center;
+  gap:.35rem;
+}
+.trace-toolbar input{width:4.8rem}
+.trace-toolbar .trace-spacer{flex:1}
+
+/* --- Three-column reading layout ----------------------------------------- */
+
+.paper-layout{
+  display:grid;
+  grid-template-columns:17rem minmax(22rem,1fr) 25rem;
+  height:calc(100vh - 12rem);
+  min-height:35rem;
+}
+
+/* --- Statement index (left column) --------------------------------------- */
+
+.paper-index{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.paper-index-head{padding:1rem}
+.paper-index-head input[type=search]{width:100%}
+.paper-index-head label{
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  margin:.55rem 0 0;
+}
+.trace-index-count{margin-top:.45rem}
+.paper-index-list{
+  flex:1;
+  overflow:auto;
+}
+
+/* --- Page stack (centre column) ------------------------------------------ */
+
+.paper-scroll{
+  position:relative;
+  min-width:0;
+  overflow:auto;
+  scroll-behavior:smooth;
+}
+.paper-stack{
+  min-width:0;
+  padding:1.5rem;
+}
+.paper-page{
+  position:relative;
+  width:100%;
+  max-width:1050px;
+  margin:0 auto 1.2rem;
+}
+/* The image plane carries the page aspect ratio (set inline by trace.js) and
+ * is the positioning context every highlight percentage is measured against. */
+.paper-image{
+  position:relative;
+  width:100%;
+  overflow:hidden;
+}
+.paper-image img{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+}
+.paper-page figcaption{
+  padding:.2rem .5rem;
+  text-align:right;
+  pointer-events:none;
+}
+
+/* --- Highlight boxes ------------------------------------------------------ */
+
+/* min-height:0 and padding:0 defend the recorded border box against the shared
+ * control height and padding that design.css gives every other button.
+ * --depth is written per box by trace.js so that a smaller box always paints
+ * above a larger one; the selected box stays above all of them. */
+.paper-highlight{
+  position:absolute;
+  padding:0;
+  min-width:5px;
+  min-height:0;
+  cursor:pointer;
+  z-index:var(--depth,2);
+}
+.paper-highlight.selected{z-index:200}
+
+/* --- Detail panel (right column) ----------------------------------------- */
+
+.paper-detail{
+  min-width:0;
+  overflow:auto;
+  padding:1.3rem;
+}
+.paper-detail details{margin:.9rem 0}
+.paper-detail summary{cursor:pointer}
+.paper-detail code{overflow-wrap:anywhere}
+.paper-empty{padding:1rem}
+.trace-lean-item{
+  margin:.9rem 0;
+  padding:.9rem;
+}
+.trace-lean-item .mono{overflow-wrap:anywhere}
+.trace-lean-item p{margin:.45rem 0}
+.trace-lean-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.45rem;
+  margin-top:.55rem;
+}
+.trace-detail-note{padding:.7rem .9rem}
+.trace-source-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.35rem;
+  margin:.9rem 0;
+}
+.trace-source-links .trace-links-label{width:100%}
+.trace-tooltip{margin:.6rem 0}
+.trace-mobile-detail{display:none}
+.trace-loading{padding:1rem 1.4rem}
+
+/* --- Wide screens --------------------------------------------------------- */
+
+@media(min-width:1700px){
+  .paper-layout{grid-template-columns:19rem minmax(24rem,1fr) 28rem}
+  .paper-detail{padding:1.7rem}
+}
+
+/* --- Breakpoint 1: three columns become two ------------------------------- */
+
+@media(max-width:1250px){
+  .paper-layout{
+    grid-template-columns:15rem minmax(20rem,1fr);
+    height:auto;
+  }
+  .paper-detail{
+    grid-column:1/-1;
+    max-height:30rem;
+  }
+  .paper-index,
+  .paper-scroll{
+    height:68vh;
+    min-height:28rem;
+  }
+  .trace-mobile-detail{display:inline-block}
+}
+
+/* --- Breakpoint 2: everything stacks -------------------------------------- */
+
+@media(max-width:760px){
+  .paper-layout{
+    display:flex;
+    flex-direction:column;
+    height:auto;
+    min-height:0;
+  }
+  .paper-index{
+    height:auto;
+    min-height:0;
+    max-height:15rem;
+  }
+  .paper-index-head{padding:.7rem}
+  .paper-index-list{max-height:10rem}
+  .paper-scroll{
+    height:68vh;
+    min-height:25rem;
+  }
+  .paper-stack{padding:.75rem}
+  .paper-page{max-width:none}
+  .paper-detail{
+    max-height:none;
+    padding:1rem;
+  }
+  .trace-toolbar{padding:.65rem}
+  .trace-toolbar .trace-spacer{display:none}
+}
+
+/* --- Large-text mode (text scale >= 150%) --------------------------------- */
+/* Three columns stop working long before the text stops growing, so the
+ * stacked shape is used at any viewport width. */
+
+.large-text .paper-layout{
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:0;
+}
+.large-text .paper-index{
+  height:auto;
+  min-height:0;
+  max-height:15rem;
+}
+.large-text .paper-index-list{max-height:10rem}
+.large-text .paper-scroll{
+  height:75vh;
+  min-height:20rem;
+}
+.large-text .paper-detail{max-height:none}
+/* The detail panel is below the page stack here, so offer the jump button. */
+.large-text .trace-mobile-detail{display:inline-block}
+
+/* --- Motion and print ----------------------------------------------------- */
+
+@media(prefers-reduced-motion:reduce){
+  .paper-scroll{scroll-behavior:auto}
+}
+
+@media print{
+  .trace-toolbar,
+  .paper-index,
+  .paper-detail{display:none!important}
+  .paper-layout{display:block;height:auto}
+  .paper-scroll{height:auto;overflow:visible}
+  .paper-stack{padding:0}
+  .paper-page{break-after:page}
+  .paper-highlight{display:none}
+}
