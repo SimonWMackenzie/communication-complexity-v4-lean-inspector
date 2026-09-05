@@ -40,7 +40,11 @@
       sentence:'Proved in Lean in this paper (EthInapproximability.V4.*). Kernel-checked as part of this development.'},
     companion:{name:'Companion paper',mark:'COMPANION PAPER',colour:'var(--reused)',
       short:'Reused from the companion paper’s Lean formalization.',
-      sentence:'Reused from the companion paper’s Lean formalization (vendored npcc-lean module %s). Kernel-checked; not authored for this paper.'},
+      /* %s is a specific vendored module where one is known, and the family of
+       * vendored modules where the sentence describes the origin as a whole —
+       * never an empty interpolation. */
+      family:'modules NPCC.*, Workspace.*, EthBridge.* and LegacyNPCC.*',
+      sentence:'Reused from the companion paper’s Lean formalization (vendored npcc-lean %s). Kernel-checked; not authored for this paper.'},
     'earlier-route':{name:'Earlier route',mark:'EARLIER ROUTE',colour:'var(--def)',
       short:'Reused from an earlier route in this repository.',
       sentence:'Reused from an earlier ETH-inapproximability route in this repository (EthInapproximability.ParameterizedNP.*), used here as a library.'},
@@ -60,7 +64,7 @@
     if(COMPANION.test(module))return 'companion';
     return 'library';
   }
-  const originSentence=(origin,module)=>ORIGINS[origin].sentence.replace('%s',module||'—');
+  const originSentence=(origin,module)=>ORIGINS[origin].sentence.replace('%s',module?'module '+module:(ORIGINS[origin].family||''));
   /* A curated map node's origin is one of four presentation classes. */
   const nodeOrigin=node=>node.origin||(node.external?'external-companion':node.id==='result'?'result':'this-paper');
   const nodeClass=node=>({'this-paper':'o-this-paper','external-companion':'o-external','external-this-paper':'o-external',result:'o-result'})[nodeOrigin(node)];
@@ -107,8 +111,21 @@
   /* ------------------------------------------------------------------ *
    * Views                                                               *
    * ------------------------------------------------------------------ */
+  /* The hint states the reading direction of the drawing actually on screen.
+   * The curated map is laid out by level, top to bottom: the two external
+   * inputs are level 0 and the headline theorem is the last level. The source
+   * graph is laid out by distance from the focused declaration, left to right,
+   * one column per traversal step in whichever direction is selected. */
+  function setHint(next){
+    const hint=document.querySelector('#graph-workspace .hint');if(!hint)return;
+    const lines=next==='overview'
+      ?['drag to pan · scroll to zoom · click a step to inspect it','external inputs at the top → headline theorem at the bottom']
+      :['drag to pan · scroll to zoom · click a card to inspect it','the focused declaration on the left → one traversal step per column to the right'];
+    hint.replaceChildren(document.createTextNode(lines[0]),el('br'),document.createTextNode(lines[1]));
+  }
   function switchView(next){
     viewMode=next;$('graph-mode').value=next;$('source-controls').hidden=next!=='source';
+    setHint(next);
     $('graph-subtitle').textContent=next==='overview'
       ?'Mathematical ingredients → results that use them. Select a step to read its explanation, paper statement, provenance and Lean components.'
       :'Declaration → name it references. These are compiler-recorded source references, not dependencies extracted from kernel proof terms.';
@@ -126,6 +143,18 @@
     const a=api.DATA.trace.anchors.find(x=>x.id===id);if(!a)return;
     host.append(btn((a.paperId==='reader'?'Reader · ':'Formal · ')+a.title,()=>window.V4Trace.selectAnchor(id),'graph-paper-link'));
   }
+  /* A Lean identifier in a heading breaks where the name breaks — after a '.'
+   * or a '_' — rather than wherever the line happens to run out. Only a single
+   * segment too long for the column is broken inside. */
+  function leanHeading(text){
+    const node=el('h2','lean-name');let piece='';
+    for(const ch of text){
+      piece+=ch;
+      if(ch==='.'||ch==='_'){node.append(document.createTextNode(piece),document.createElement('wbr'));piece='';}
+    }
+    if(piece)node.append(document.createTextNode(piece));
+    return node;
+  }
   function originBadge(origin,host){
     const badge=el('span','badge o-'+origin,ORIGINS[origin].mark);host.append(badge);return badge;
   }
@@ -139,7 +168,7 @@
   /* ---- detail: one Lean declaration in the source-reference relation ---- */
   function detailCard(id){
     selected=id;const d=g.cards.get(id),host=$('graph-detail'),origin=originOf(d);host.replaceChildren();
-    host.append(el('div','eyebrow','Lean source · '+ORIGINS[origin].mark),el('h2','lean-name',short(id)));
+    host.append(el('div','eyebrow','Lean source · '+ORIGINS[origin].mark),leanHeading(short(id)));
     const badges=el('div','badges');originBadge(origin,badges);badges.append(el('span','badge',d.kind||'declaration'));host.append(badges);
     host.append(el('p','graph-full-name',id));
     originLine(origin,d.module,host);
@@ -221,7 +250,7 @@
   function detailGroup(node){
     const host=$('graph-detail');host.replaceChildren();selected=node.id;
     const origin=originOf(g.cards.get(node.members[0]));
-    host.append(el('div','eyebrow','Grouped source references · '+ORIGINS[origin].mark),el('h2','lean-name',short(node.id)));
+    host.append(el('div','eyebrow','Grouped source references · '+ORIGINS[origin].mark),leanHeading(short(node.id)));
     const badges=el('div','badges');originBadge(origin,badges);badges.append(el('span','badge',node.members.length+' declarations'));host.append(badges);
     host.append(el('p','graph-full-name',node.id));
     originLine(origin,node.id,host);
@@ -255,7 +284,40 @@
   const NODE_W=336,NODE_H=132,LANE=360,ROW=168,PAD=17;
   const CHIP_H=16,CHIP_CHAR=5.4,CHIP_PAD=7;
   function words(text,max=29){const parts=text.replaceAll('_',' ').split(/\s+/),lines=[];let current='';for(const p of parts){if((current+' '+p).trim().length>max&&current){lines.push(current);current=p;}else current=(current+' '+p).trim();}if(current)lines.push(current);return lines.slice(0,2).map(s=>s.length>max?s.slice(0,max-1)+'…':s);}
-  function hardWrap(text,max=30){if(text.length<=max)return [text];const rest=text.slice(max);return [text.slice(0,max),rest.length>max?rest.slice(0,max-1)+'…':rest];}
+  /* A Lean identifier is a name, not prose, and a hard slice at column 30 cut
+   * it mid-token ("…ExternalBala/ncednessRoot") or left a one-letter orphan.
+   * It is broken where the name itself breaks — after a '.' or '_', or at a
+   * camelCase boundary — the separator staying with the segment it closes. A
+   * segment that still will not fit is middle-ellipsized rather than truncated,
+   * so both ends stay readable; the complete name is always in the node's
+   * <title> and in the aside. */
+  function camelSplit(part){
+    const out=[];let start=0;
+    for(let i=1;i<part.length;i++){
+      const previous=part[i-1],here=part[i];
+      if(here>='A'&&here<='Z'&&((previous>='a'&&previous<='z')||(previous>='0'&&previous<='9'))){out.push(part.slice(start,i));start=i;}
+    }
+    out.push(part.slice(start));return out;
+  }
+  function middleClip(text,max){
+    if(text.length<=max)return text;
+    const head=Math.ceil((max-1)/2);
+    return text.slice(0,head)+'…'+text.slice(text.length-(max-1-head));
+  }
+  function leanWrap(text,max=30,rows=2){
+    const atoms=[];
+    for(const segment of text.match(/[._]*[^._]+[._]*/g)||[text])for(const atom of camelSplit(segment))if(atom)atoms.push(atom);
+    const lines=[];let line='';
+    /* An atom of one or two characters never starts a line: it joins the one
+     * before it even when that overruns by a character or two. */
+    for(const atom of atoms){
+      if(line&&line.length+atom.length>max&&atom.length>2){lines.push(line);line=atom;}
+      else line+=atom;
+    }
+    if(line)lines.push(line);
+    if(lines.length<=rows)return lines.map(l=>middleClip(l,max));
+    return [...lines.slice(0,rows-1).map(l=>middleClip(l,max)),middleClip(lines.slice(rows-1).join(''),max)];
+  }
   function chip(group,item,x,y){
     const width=Math.round(item.text.length*CHIP_CHAR)+2*CHIP_PAD;
     const box=svgEl('g',{class:'chip'+(item.cls?' '+item.cls:''),transform:'translate('+x+','+y+')'});
@@ -298,7 +360,7 @@
       caption.textContent=overview?map.originCaptions[nodeOrigin(node)]
         :ORIGINS[originOf(g.cards.get(node.members[0]))].mark+' · '+(node.members.length>1?node.members.length+' declarations':(g.cards.get(node.members[0]).kind||'declaration'));
       group.append(caption);
-      const lines=overview?words(node.title,36):hardWrap(short(node.id),30);
+      const lines=overview?words(node.title,36):leanWrap(short(node.id),30);
       lines.forEach((text,i)=>{const t=svgEl('text',{x:PAD,y:48+i*21,class:'proof-node-title'+(overview?'':' is-lean')});t.textContent=text;group.append(t);});
       if(overview){
         let x=PAD;
@@ -389,13 +451,17 @@
 
     const modes=pill('modes');modes.setAttribute('role','group');modes.setAttribute('aria-label','View');
     $('show-root').textContent='Lean source';$('show-root').title='Read the exact Lean declarations and their recorded references';
+    $('open-paper-trace').textContent='📄 Papers';
+    $('show-provenance').textContent='Verification';$('show-provenance').title='The verification record: proof snapshot, published logs and the audited axiom footprint';
     modes.append($('open-proof-map'),$('show-root'),$('open-paper-trace'));
     const routes=pill('routes','arrows');routes.setAttribute('role','group');routes.setAttribute('aria-label','Which arrows the graph draws');
-    const curated=btn('curated mathematics',()=>open('overview'));curated.id='route-curated';curated.title='Arrows are the curated mathematical dependence between steps of the papers';
-    const source=btn('source references',()=>open('source'));source.id='route-source';source.title='Arrows are compiler-recorded source references between Lean declarations';
+    const curated=btn('curated',()=>open('overview'));curated.id='route-curated';curated.title='Arrows are the curated mathematical dependence between steps of the papers';
+    const source=btn('source',()=>open('source'));source.id='route-source';source.title='Arrows are compiler-recorded source references between Lean declarations';
     routes.append(curated,source);
 
     const scale=document.querySelector('.scale-controls');scale.classList.add('uical');scale.prepend(el('span','ul','UI size'));
+
+    const download=proofIndexButton();
 
     const search=el('div','searchbox');
     const input=el('input');input.id='top-search';input.type='search';input.autocomplete='off';input.spellcheck=false;
@@ -406,21 +472,44 @@
     input.addEventListener('keydown',e=>{if(e.key==='Escape'){results.hidden=true;input.blur();}if(e.key==='Enter'){const first=results.querySelector('button');if(first)first.click();}});
     input.addEventListener('blur',()=>setTimeout(()=>{results.hidden=true;},180));
 
-    const extra=el('div','toolbar-extra');extra.append($('show-provenance'),$('show-help'),document.querySelector('.mobile-toggle'));
-    bar.replaceChildren(modes,routes,scale,search,extra);
+    /* One wrapping control row, not a row plus a nested group that wrapped
+     * again: the record, help and navigation buttons are ordinary members. */
+    bar.replaceChildren(modes,routes,scale,search,download,$('show-provenance'),$('show-help'),document.querySelector('.mobile-toggle'));
 
     const stats=el('div','stats');
-    const rows=[['s-this-paper',closure['this-paper'],'proved here','V4 declarations reached from the root theorem'],
-      ['s-companion',closure.companion,'companion Lean','Declarations reused from the companion paper’s vendored Lean formalization'],
+    const rows=[['s-this-paper',closure['this-paper'],'this paper','Declarations proved in Lean in this paper (EthInapproximability.V4.*) and reached from the root theorem'],
+      ['s-companion',closure.companion,'companion','Declarations reused from the companion paper’s vendored Lean formalization'],
       ['s-earlier-route',closure['earlier-route'],'earlier route','Declarations reused from EthInapproximability.ParameterizedNP.*'],
       ['s-library',closure.library,'library','Mathlib, Lean core and Batteries declarations'],
       ['s-external',2,'external inputs','The composed source theorem and the balanced-family theorem — neither is proved in Lean'],
-      ['s-axioms',rootAxioms().length,'standard axioms',rootAxioms().join(' · ')]];
+      ['s-axioms',rootAxioms().length,'axioms','The audited axiom footprint of the root theorem: '+(rootAxioms().join(' · ')||'not recorded')]];
     for(const [cls,value,label,title]of rows){
       const stat=el('div','stat '+cls);stat.title=title;
       stat.append(el('b',null,count(value)),el('span',null,label));stats.append(stat);
     }
+    /* The four provenance counts are a partition; say of what. */
+    const denominator=el('span','stats-note','of '+count(closure.total)+' declarations in the root’s source-reference closure');
+    denominator.title='Every declaration reachable from '+api.DATA.root+' through compiler-recorded source references. The external inputs and the axioms to its right are not part of that count.';
+    stats.append(denominator);
     document.querySelector('.topbar').append(stats);
+  }
+  /* The compressed proof index, offered as a file. Its size is the transfer the
+   * page itself already made, not a number typed into the markup; where the
+   * server does not report one, the size is simply left out. */
+  function indexSize(){
+    if(!performance.getEntriesByType)return '';
+    const entry=performance.getEntriesByType('resource').find(r=>/proof-data\.json\.gz$/.test(r.name));
+    const bytes=entry&&(entry.encodedBodySize||entry.transferSize);
+    return bytes?(bytes/1048576).toFixed(1)+' MB':'';
+  }
+  function proofIndexButton(){
+    const link=el('a','dlbtn'),axioms=rootAxioms(),text=el('span','dl-tx');
+    link.href='proof-data.json.gz';link.download='communication-complexity-proof-index.json.gz';
+    text.append(el('b',null,'Proof index'),
+      el('span',null,['.json.gz',indexSize(),axioms.length+' axioms'].filter(Boolean).join(' · ')));
+    link.append(el('span','dl-ic','⬇'),text);
+    link.title='Download the complete compiled proof and source-reference index this page reads: '+count(api.DATA.declarations.length)+' declarations, their exact Lean source and the published verification records. Audited axiom footprint of '+api.DATA.root+': '+(axioms.join(' · ')||'not recorded')+'.';
+    return link;
   }
   function runSearch(input,results){
     const query=input.value.toLowerCase().trim();results.replaceChildren();results.hidden=!query;if(!query)return;
@@ -447,23 +536,27 @@
       b.append(el('span','pm-num',String(i+1)),copy);strip.append(b);
     });
   }
+  /* A key, not a paragraph: one short label per row, the full sentence on the
+   * row's own tooltip, and the standing caveat on the box. It sits over the
+   * canvas, so every line it grows costs drawing area. */
   function buildLegend(){
     const box=el('div','legend');box.setAttribute('aria-label','What the colours and arrows mean');
+    box.title='Colour carries provenance and nothing else; the kind of declaration is a badge. A dashed amber card is an external input — stated, consumed, and not proved in Lean.';
     box.append(el('div','lg-t','Provenance'));
-    const rows=[['var(--proved)','Proved in Lean in this paper (EthInapproximability.V4)',false],
-      ['var(--reused)','Reused from the companion paper’s Lean (NPCC · Workspace · EthBridge)',true],
-      ['var(--def)','Reused from an earlier route in this repository (ParameterizedNP)',false],
-      ['var(--axiom)','External input — not proved in Lean',true],
-      ['var(--faint)','Library (Mathlib · Lean core)',false]];
-    for(const [colour,text,dashed]of rows){
+    const rows=[['var(--proved)','This paper',false,'Proved in Lean in this paper (EthInapproximability.V4.*).'],
+      ['var(--reused)','Companion paper',true,'Reused from the companion paper’s vendored Lean formalization (NPCC.*, Workspace.*, EthBridge.*, LegacyNPCC.*).'],
+      ['var(--def)','Earlier route',false,'Reused from an earlier route in this repository (EthInapproximability.ParameterizedNP.*).'],
+      ['var(--axiom)','External input',true,'A mathematical input no Lean proof here establishes; it enters the root theorem as an explicit hypothesis.'],
+      ['var(--faint)','Library',false,'Mathlib, Lean core or Batteries.']];
+    for(const [colour,text,dashed,title]of rows){
       const row=el('div','row'+(dashed?' is-dashed':'')),swatch=el('span','sw');
-      swatch.style.setProperty('--tick',colour);row.append(swatch,el('span',null,text));box.append(row);
+      row.title=title;swatch.style.setProperty('--tick',colour);row.append(swatch,el('span',null,text));box.append(row);
     }
     const arrows=el('div','rt');
-    for(const [cls,text]of [['','Curated mathematical dependence'],['dashed','Compiler-recorded source reference']]){
-      const row=el('div','row');row.append(el('span','rule '+cls),el('span',null,text));arrows.append(row);
+    for(const [cls,text,title]of [['','Curated mathematics','An arrow of the curated mathematical map: an ingredient of the step it points to.'],
+      ['dashed','Source reference','A compiler-recorded source reference between Lean declarations, not a kernel proof-term dependency.']]){
+      const row=el('div','row');row.title=title;row.append(el('span','rule '+cls),el('span',null,text));arrows.append(row);
     }
-    arrows.append(el('p','note','Dashed amber = external input, not proved in Lean.'));
     box.append(arrows);return box;
   }
   function buildFooter(){
@@ -537,7 +630,11 @@
     layout.append(wrap,detail);main.append(layout);
     let pan=null;canvas.addEventListener('pointerdown',e=>{if(e.target.closest('[data-graph-node],.proof-edge'))return;pan={x:e.clientX,y:e.clientY,left:canvas.scrollLeft,top:canvas.scrollTop};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(pan){canvas.scrollLeft=pan.left+pan.x-e.clientX;canvas.scrollTop=pan.top+pan.y-e.clientY;}});canvas.addEventListener('pointerup',()=>pan=null);canvas.addEventListener('pointercancel',()=>pan=null);
     const complete=el('details','graph-complete-list');complete.append(el('summary',null,'Complete eligible node list and graph data'));const list=el('div');list.id='graph-node-list';const full=el('a',null,'Download complete proof and reference index (.gz)');full.href='proof-data.json.gz';full.download='communication-complexity-proof-index.json.gz';complete.append(el('p',null,'The display cap affects only the drawing. This list includes every eligible declaration in the selected traversal; the full download also contains declarations outside that traversal.'),full,list);main.append(complete);
-    $('workspace').before(main);const nav=btn('Proof map',()=>open('overview'));nav.id='open-proof-map';nav.title='How the result fits together: the curated mathematical map';$('open-paper-trace').after(nav);
+    /* The pill names the VIEW, not one of its two relations: it stays pressed
+     * while the view is open, and the arrows group next to it says which
+     * relation is drawn. Labelling it "Proof map" contradicted its own pressed
+     * state as soon as the Lean source graph was selected. */
+    $('workspace').before(main);const nav=btn('Graph',()=>open('overview'));nav.id='open-proof-map';nav.title='The dependency explorer: the curated mathematical proof map, and the Lean source-reference graph';$('open-paper-trace').after(nav);
     buildHeader();buildShortcuts();buildFooter();decorateNavigation();
     document.addEventListener('v4-view-changed',e=>{const on=e.detail.mode==='graph';main.hidden=!on;nav.setAttribute('aria-pressed',String(on));if(!on)markShortcut(null);});
     document.addEventListener('v4-declaration-selected',e=>{

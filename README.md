@@ -120,8 +120,10 @@ part of this build.
 The two external inputs are named wherever they appear: the **composed source
 theorem** (formal Assumption 4.1 / reader §2.2), whose intended source is the
 companion construction, and the **balanced-family theorem** (formal Theorem
-4.4 and Appendix D / reader §2.3), proved on paper in this paper and
-deliberately kept outside Lean. Both enter the root theorem as explicit
+4.4 and Appendix D / reader §2, Equation 14 on p. 5), proved on paper in this
+paper and deliberately kept outside Lean. Both citations name a location the
+compiled anchor index actually carries, so the provenance card's prose and the
+link beside it agree. Both enter the root theorem as explicit
 hypotheses. The root's audited axiom footprint, quoted from the published
 verification log, is `propext · Classical.choice · Quot.sound`; the companion
 layer's own balanced-family citation axiom is not in it.
@@ -134,6 +136,51 @@ coloured tick per navigation row; the paper tracer's highlight colours follow
 the correspondence classification and are explained by a key above the pages.
 
 The landing view is the mathematical proof map.
+
+## Comparative QA revision
+
+A second pass compared the site against the published NP-hardness explorer and
+closed the gaps it found.
+
+The dependency explorer is now a **fixed one-screen shell**, as the reference
+is: `html`/`body` own the viewport, and the canvas and the aside scroll inside
+themselves, so the legend, the floating buttons and the axiom footer are always
+on screen instead of below the fold. The clamp is scoped to that view — the
+paper tracer and the Lean inspector are documents and keep the page's own
+scrolling — and it is released below 760px and at text scales of 150% and
+above, where the columns have already stacked and one screen cannot hold canvas,
+aside and footer at a usable size; the whole page scrolls there instead.
+
+The header went from four rows and 273px to two rows and 165px at 1440px:
+identity and the provenance counts on the first row, every control on the
+second. Selects are drawn by the design system rather than the browser (an
+inline data-URI chevron, no icon font and no network request); the text-size
+stepper, the pill groups and the search box share one radius family; and the
+proof-index download is offered as the reference's two-line `.dlbtn`, whose
+size is read from the transfer the page itself made.
+
+Provenance display was tightened rather than changed: the shortcut numbers now
+take their step's origin colour instead of falling through to the interface
+accent, the counts say what they are counts of (the root's source-reference
+closure) and separate the two that count something else, the legend is a key
+with its sentences on tooltips instead of a paragraph over the drawing, and the
+graph pill is named for the view it opens rather than for one of that view's
+two relations. `--faint` was raised to `#7c8c9e`, which clears 4.5:1 on every
+surface it is used on (`--panel2` is the worst case, at 4.54:1), and the
+tracer's "no correspondence" and "context" greys, previously a shade apart, are
+now a grey and a violet.
+
+In the Lean source graph, declaration names break where the name itself breaks
+— after a `.` or `_`, or at a camelCase boundary — and a segment that still
+does not fit is middle-ellipsized rather than cut mid-token; the complete name
+stays in the node's tooltip and in the aside.
+
+One pre-existing nit is recorded but not fixed, because it is in the read-only
+template: its document-level `keydown` handler calls `e.target.matches(...)`
+without checking that the target is an `Element`, so a keyboard event
+dispatched directly on `document` or `window` throws. Real keystrokes always
+target an element, so this never fires in use. The handlers this repository
+owns (`trace.js`, `graph.js`) guard it.
 
 The user approved browser testing. test_browser.cjs runs an isolated headless
 browser against the local preview and covers paper tracing, definition cards,

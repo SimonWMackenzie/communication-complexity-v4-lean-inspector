@@ -61,7 +61,10 @@
   /* -- Ink ----------------------------------------------------------------- */
   --ink:#dce3ec;
   --muted:#8a97a9;
-  --faint:#6f7d8d;           /* raised from the reference's #5a6572          */
+  /* Raised twice from the reference's #5a6572: every surface this token is
+     used on (--ground, --quiet, --panel, --panel2 and the legend's glass)
+     now clears 4.5:1, --panel2 being the worst case at 4.54:1. */
+  --faint:#7c8c9e;
 
   /* -- Semantic colour: the five origins ----------------------------------- */
   --proved:#4bbf73;          /* proved in Lean, in this paper                */
@@ -93,8 +96,12 @@
   --hl-statement:#4bbf73;
   --hl-assembled:#2f8f57;
   --hl-external:#e0a458;
+  /* "No correspondence" and "context" were two greys a shade apart and read as
+     one category. Unmapped stays grey (and dotted); context takes a
+     desaturated violet lifted out of --accent-dim, which reads clearly both
+     on the white page and in the dark key. */
   --hl-unmapped:#6f7d8d;
-  --hl-context:#8a97a9;
+  --hl-context:#8a7cc8;
 
   /* -- Code surface --------------------------------------------------------- */
   --code-bg:#0b0f15;
@@ -159,7 +166,7 @@
 
   /* -- Structural rails ------------------------------------------------------ */
   --rail:20rem;
-  --aside:24rem;
+  --aside:40rem;             /* the reference's clamp(650px,32vw,680px)      */
 
   color-scheme:dark;
 }
@@ -168,13 +175,48 @@
    §2  BASE ELEMENTS
    ========================================================================== */
 
+/* --- The application shell ------------------------------------------------
+   The reference is one fixed screen: html/body own the viewport and every
+   region scrolls inside itself. That is right for the dependency explorer,
+   whose legend, floating buttons and status footer are chrome and must never
+   be below the fold — but wrong for the paper tracer and the Lean inspector,
+   which are documents. So the clamp is scoped: trace.js sets body.mode-graph
+   while the explorer is open, and only then does the page stop scrolling.
+   Below 760px and in large-text mode the columns have already stacked, so the
+   whole page scrolls there instead (see §20 and §21). */
+
+html{height:100%}
 body{
+  margin:0;
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
   background:var(--ground);
   color:var(--ink);
   font-family:var(--sans);
   font-size:var(--fs-lg);
   line-height:1.6;
   -webkit-font-smoothing:antialiased;
+}
+body.mode-graph{height:100%;overflow:hidden}
+body.mode-graph #graph-workspace{
+  flex:1 1 0;
+  min-height:0;
+  margin:0 auto;             /* not `auto`: vertical auto margins would eat   */
+  display:flex;              /* the free space instead of letting flex grow   */
+  flex-direction:column;
+  overflow:hidden;
+}
+/* The layout is a grid, so its row has to be told to take the height the flex
+   line gives it; an auto row would size to the drawing and overflow instead. */
+body.mode-graph .graph-layout{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr)}
+body.mode-graph .canvas-wrap{min-height:0}
+body.mode-graph .graph-complete-list{
+  flex:0 0 auto;
+  max-height:45%;
+  overflow:auto;
+  margin:var(--sp-3) 0 0;
+  padding:var(--sp-4) var(--sp-5);
 }
 p{line-height:var(--lh-body)}
 h2,h3,h4{color:var(--ink)}
@@ -239,13 +281,28 @@ button[aria-pressed=true]{
   box-shadow:inset 0 0 0 1px var(--accent);
 }
 button:disabled{opacity:.4}
-/* A select sizes itself (Chrome forces line-height:normal), so its height is
-   stated rather than derived from padding; the fill matches every control. */
+/* A select was the one control left in the browser's own paint. It is drawn
+   here like every other control: the native arrow is replaced by an inline
+   data-URI chevron in --muted (no network request, no icon font), the value is
+   set in the mono face like the rest of the console, and the popup list keeps
+   the panel's dark fill so the options stay legible. */
 select{
-  height:var(--control-h);
-  padding:0 var(--sp-4);
-  background:var(--panel2);
+  appearance:none;
+  -webkit-appearance:none;
+  height:auto;
+  min-height:var(--control-h);
+  padding:5px 26px 5px 10px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a97a9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center;
 }
+select:hover{border-color:var(--line-strong)}
+select::-ms-expand{display:none}
+select option,
+select optgroup{background:var(--panel);color:var(--ink)}
 input[type=search],
 input[type=number],
 input[type=text]{padding:var(--sp-3);background:var(--ground)}
@@ -292,6 +349,28 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
   font-variant-numeric:tabular-nums;
 }
+/* The top bar's text-size stepper is the reference's .uical: a square-cornered
+   8px group like .modes and .routes, with 22px square icon buttons — not the
+   lozenge the two zoom pills use inside their own views. */
+.scale-controls{
+  gap:4px;
+  padding:3px 5px;
+  border-radius:var(--r-md);
+}
+.scale-controls button{
+  width:22px;
+  height:22px;
+  min-width:0;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:var(--panel2);
+  font-family:var(--mono);
+  font-size:14px;
+  line-height:1;
+}
+.scale-controls button:hover{background:var(--panel2);color:#fff;border-color:var(--accent);box-shadow:none}
+.scale-controls output{min-width:38px;font-size:11px}
 
 /* =============================================================================
    §5  EYEBROW AND DETAIL HEADERS
@@ -307,22 +386,32 @@ input[type=checkbox]{accent-color:var(--accent)}
   text-transform:uppercase;
   color:var(--accent);
 }
+/* The reference's .insp-head h2: 16px/650. The aside is a reading column, not
+   a page, so its title sits a step above the prose rather than a page-title
+   step above it. */
 .paper-detail h2,
 .graph-detail h2{
-  font-size:var(--fs-3xl);
+  font-size:1rem;
   font-weight:650;
   line-height:var(--lh-tight);
-  letter-spacing:-.015em;
+  letter-spacing:-.01em;
   margin:var(--sp-2) 0 var(--sp-4);
   text-wrap:balance;
   overflow-wrap:anywhere;
 }
+/* A Lean identifier is a name: it keeps the mono face, and breaks at the '.'
+   and '_' its own segments end with. */
 .graph-detail h2.lean-name{
   font-family:var(--mono);
-  font-size:var(--fs-2xl);
+  font-size:var(--fs-md);
   font-weight:600;
   letter-spacing:0;
-  line-height:1.35;
+  line-height:1.4;
+  text-wrap:wrap;
+  /* graph.js marks the '.' and '_' boundaries with <wbr>; only a segment that
+     is itself wider than the column is broken inside. */
+  overflow-wrap:break-word;
+  word-break:normal;
 }
 .paper-detail p,
 .graph-detail p,
@@ -548,39 +637,48 @@ input[type=checkbox]{accent-color:var(--accent)}
    §8  TOP BAR — brand, mode pills, arrow pills, stats, size, search
    ========================================================================== */
 
+/* Two rows, not four: identity and the counts it is counting on the first,
+   every control on the second. `order` states that arrangement independently
+   of source order, which keeps the controls last in the tab sequence. */
 .topbar{
-  gap:var(--sp-4) var(--sp-5);
-  padding:var(--sp-4) var(--sp-6);
+  flex:0 0 auto;
+  gap:10px 14px;
+  padding:11px 18px;
   background:linear-gradient(180deg,#121821,#0e1218);
   border-bottom:1px solid var(--line);
-  align-items:flex-start;
+  align-items:center;
 }
 .brand{
+  order:1;
   display:flex;
   flex-direction:column;
-  gap:var(--sp-1);
-  flex:0 0 100%;
+  gap:2px;
+  flex:1 1 26rem;
   min-width:0;
 }
-.brand .eyebrow{color:var(--accent)}
+.brand .eyebrow{color:var(--accent);line-height:1.3}
 .brand h1{
-  margin:var(--sp-0) 0;
-  font-size:1.15rem;
+  margin:0;
+  font-size:14.5px;
   font-weight:650;
   letter-spacing:-.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   color:var(--ink);
 }
 .brand .sub{
   display:block;
   font-family:var(--mono);
-  font-size:var(--fs-xs);
+  font-size:10.5px;
+  line-height:1.35;
   color:var(--muted);
   overflow-wrap:anywhere;
 }
 .brand .scopecaveat{
   max-width:88rem;
-  font-size:var(--fs-xs);
-  line-height:1.5;
+  font-size:10.5px;
+  line-height:1.35;
   color:var(--muted);
 }
 .brand .scopecaveat b{color:var(--ink);font-weight:600}
@@ -588,22 +686,54 @@ input[type=checkbox]{accent-color:var(--accent)}
 .brand .scopecaveat .cmp{color:var(--reused);font-weight:600}
 
 .toolbar{
-  gap:var(--sp-3);
+  order:3;
+  gap:8px;
   align-items:center;
-  flex:1 1 auto;
+  flex:0 0 100%;
+  min-width:0;
   flex-wrap:wrap;
 }
 .toolbar button{font-size:var(--fs-base)}
-.toolbar-extra{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
-.toolbar-extra button{
-  min-height:var(--control-h);
+/* The record/help/navigation buttons used to sit in their own .toolbar-extra
+   block, which forced a wrap of its own; they are ordinary members of the
+   control row now. */
+.toolbar>#show-provenance,
+.toolbar>#show-help,
+.toolbar>#toggle-nav{
+  min-height:0;
+  padding:6px 11px;
   font-family:var(--mono);
-  font-size:var(--fs-xs);
+  font-size:11px;
   background:transparent;
   border-color:var(--line);
   color:var(--muted);
 }
-.toolbar-extra button:hover{background:var(--panel2);color:#fff;border-color:var(--accent)}
+.toolbar>#show-provenance:hover,
+.toolbar>#show-help:hover,
+.toolbar>#toggle-nav:hover{background:var(--panel2);color:#fff;border-color:var(--accent)}
+
+/* --- The proof-index download (the reference's .dlbtn) -------------------- */
+
+.dlbtn{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:9px;
+  padding:6px 12px;
+  background:var(--panel2);
+  border:1px solid var(--reused-dim);
+  border-radius:9px;
+  text-decoration:none;
+  transition:border-color .12s,background .12s;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.dlbtn:hover{border-color:var(--reused);background:#0e2429}
+.dlbtn:active{transform:translateY(1px)}
+.dlbtn .dl-ic{font-size:15px;line-height:1;color:var(--reused)}
+.dlbtn .dl-tx{display:flex;flex-direction:column;line-height:1.18}
+.dlbtn .dl-tx b{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink)}
+.dlbtn .dl-tx span{font-family:var(--mono);font-size:9px;letter-spacing:.03em;color:var(--muted)}
 
 /* --- Pill groups: .modes, .routes, .uical --------------------------------- */
 
@@ -617,20 +747,22 @@ input[type=checkbox]{accent-color:var(--accent)}
   border:1px solid var(--line);
   border-radius:var(--r-md);
 }
-.routes{padding-left:var(--sp-4)}
+.modes,
+.routes{flex:0 0 auto;padding:3px}
+.routes{padding:3px 3px 3px 9px}
 .modes button,
 .routes button{
   min-height:0;
-  padding:var(--sp-3) var(--sp-5);
+  padding:6px 12px;
   border:0;
-  border-radius:var(--r-sm);
+  border-radius:6px;
   background:transparent;
   color:var(--muted);
   font-family:var(--mono);
-  font-size:var(--fs-xs);
+  font-size:11px;
   white-space:nowrap;
 }
-.routes button{padding:var(--sp-2) var(--sp-4)}
+.routes button{padding:5px 10px}
 .modes button:hover,
 .routes button:hover{background:transparent;border-color:transparent;color:var(--ink);box-shadow:none}
 .modes button[aria-pressed=true],
@@ -641,29 +773,34 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .routes .rlbl{
   font-family:var(--mono);
-  font-size:.6rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:var(--faint);
-  margin-right:var(--sp-1);
-}
-.uical .ul{
-  font-family:var(--mono);
-  font-size:.6rem;
+  font-size:9px;
   letter-spacing:.1em;
   text-transform:uppercase;
   color:var(--faint);
-  padding:0 var(--sp-2) 0 var(--sp-3);
+  margin-right:2px;
+}
+.uical .ul{
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--faint);
+  padding:0 2px;
 }
 
 /* --- The stats row -------------------------------------------------------- */
 
 .topbar .stats{
+  order:2;
   display:flex;
-  gap:var(--sp-6);
+  gap:12px;
   flex-wrap:wrap;
+  /* Capped so the caption below wraps inside the block instead of setting the
+     block's width and squeezing the identity beside it. */
+  max-width:32rem;
   margin:0 0 0 auto;
   align-items:flex-start;
+  justify-content:flex-end;
 }
 .topbar .stat{
   display:flex;
@@ -674,17 +811,33 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .topbar .stat b{
   font-family:var(--mono);
-  font-size:1rem;
+  font-size:15px;
   font-weight:600;
   font-variant-numeric:tabular-nums;
   color:var(--ink);
   margin:0;
 }
 .topbar .stat span{
-  font-size:.6rem;
+  font-size:9.5px;
   letter-spacing:.08em;
   text-transform:uppercase;
   color:var(--muted);
+}
+/* The first four counts partition one set; the last two count different things
+   (mathematical inputs, and logical axioms), so they sit behind a rule. */
+.topbar .stat.s-external{
+  padding-left:12px;
+  border-left:1px solid var(--line);
+}
+/* What the four provenance counts are counts OF. */
+.topbar .stats-note{
+  flex:0 0 100%;
+  margin-top:1px;
+  text-align:right;
+  font-family:var(--mono);
+  font-size:9.5px;
+  letter-spacing:.03em;
+  color:var(--faint);
 }
 .topbar .stat.s-this-paper b{color:var(--proved)}
 .topbar .stat.s-companion b{color:var(--reused)}
@@ -697,19 +850,21 @@ input[type=checkbox]{accent-color:var(--accent)}
 
 .searchbox{
   display:flex;
+  flex:0 1 auto;
+  min-width:0;
   align-items:center;
-  gap:var(--sp-3);
+  gap:8px;
   position:relative;
-  padding:0 var(--sp-4);
-  height:var(--control-h);
+  padding:0 10px;
+  height:32px;
   background:var(--panel);
   border:1px solid var(--line);
-  border-radius:var(--r-sm);
+  border-radius:7px;
 }
 .searchbox .mark{font-family:var(--mono);font-size:var(--fs-base);color:var(--faint)}
 .searchbox input{
   min-height:0;
-  width:clamp(7rem,12vw,12rem);
+  width:clamp(5rem,7vw,10.5rem);
   padding:0;
   border:0;
   background:transparent;
@@ -808,6 +963,11 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--accent);
   font:600 .62rem/1 var(--mono);
 }
+/* The number carries the step's origin, like everything else that is coloured
+   here; --accent is the interface accent and is left to selection alone. Only
+   the four origins the curated map actually uses are listed: no map step is an
+   earlier-route or companion-paper step. */
+.proofmap button[data-origin=this-paper] .pm-num{border-color:var(--proved-dim);color:var(--proved)}
 .proofmap button[data-origin=external-companion] .pm-num,
 .proofmap button[data-origin=external-this-paper] .pm-num{border-color:var(--axiom-dim);color:var(--axiom)}
 .proofmap button[data-origin=result] .pm-num{border-color:var(--proved-dim);color:var(--headline)}
@@ -851,7 +1011,6 @@ input[type=checkbox]{accent-color:var(--accent)}
 .nav-flags{font-size:var(--fs-base);color:var(--muted)}
 .nav-more{font-size:var(--fs-base)}
 .search-wrap input,
-.filters select,
 .graph-detail input[type=search],
 .paper-index-head input[type=search]{
   background:var(--ground);
@@ -859,6 +1018,14 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-sm);
   color:var(--ink);
   font-size:var(--fs-base);
+}
+/* The rail's two filters are selects and keep the shared select paint —
+   chevron included; only the fill follows the rail. Overriding `background`
+   here would take the chevron with it, so only the colour is restated. */
+.filters select{
+  background-color:var(--ground);
+  padding:5px 26px 5px 10px;
+  font-size:11px;
 }
 .nav-count{
   margin-top:var(--sp-3);
@@ -870,11 +1037,12 @@ input[type=checkbox]{accent-color:var(--accent)}
 /* --- The site footer: axiom footprint and external inputs ----------------- */
 
 .sitefoot{
+  flex:0 0 auto;
   display:flex;
   flex-wrap:wrap;
   align-items:center;
-  gap:var(--sp-3) var(--sp-6);
-  padding:var(--sp-4) var(--sp-6);
+  gap:var(--sp-2) var(--sp-5);
+  padding:var(--sp-3) var(--sp-5);
   border-top:1px solid var(--line);
   background:var(--quiet);
   font-family:var(--mono);
@@ -1046,8 +1214,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 .graph-node .sub{fill:var(--muted);font-size:11px}
 .graph-edge{stroke:var(--line-strong)}
 .graph-heading{fill:var(--muted);font-size:13px}
-.graph-controls,
-.graph-controls select{font-size:var(--fs-base)}
+.graph-controls{font-size:var(--fs-base)}
 
 /* =============================================================================
    §13  FLOATING LAYERS — definition cards (the reference's .gwin windows)
@@ -1117,8 +1284,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-bottom:1px solid var(--line);
 }
 .trace-toolbar label,
-.trace-toolbar button,
-.trace-toolbar select{font-size:var(--fs-base)}
+.trace-toolbar button{font-size:var(--fs-base)}
 .paper-index{
   background:var(--quiet);
   border-right:1px solid var(--line);
@@ -1271,21 +1437,23 @@ input[type=checkbox]{accent-color:var(--accent)}
    §18  DEPENDENCY EXPLORER
    ========================================================================== */
 
+/* Everything in this view is chrome around one drawing, so every fixed band
+   above and below the canvas is drawing area spent. */
 .graph-workspace{
   max-width:1900px;
   margin:auto;
-  padding:var(--sp-6) var(--sp-6) var(--sp-7);
+  padding:var(--sp-5);
 }
 .graph-heading-row{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap:var(--sp-7);
-  margin-bottom:var(--sp-5);
+  margin-bottom:var(--sp-4);
 }
 .graph-heading-row h2{
-  margin:var(--sp-1) 0;
-  font-size:var(--fs-3xl);
+  margin:0;
+  font-size:var(--fs-2xl);
   letter-spacing:-.02em;
 }
 .graph-heading-row p{
@@ -1385,7 +1553,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   align-items:center;
   flex-wrap:wrap;
   gap:var(--sp-2);
-  margin:var(--sp-4) 0;
+  margin:var(--sp-3) 0;
 }
 .graph-statusbar #graph-count{
   flex:1 1 28rem;
@@ -1420,12 +1588,18 @@ input[type=checkbox]{accent-color:var(--accent)}
   box-shadow:var(--shadow-1);
 }
 .canvas-wrap{position:relative;min-width:0;display:flex}
+/* Canvas and aside fill the shell and scroll inside themselves; neither one
+   lengthens the page. */
 .graph-canvas{
   flex:1;
   min-width:0;
-  max-height:76vh;
-  min-height:38rem;
-  padding:var(--sp-4);
+  min-height:0;
+  height:100%;
+  /* The top band is the hint's: both graphs put their first row at the very
+     top of the drawing, so without it the second line of the hint lands across
+     the topmost cards. It is scroll padding, so panning still reaches
+     everything. */
+  padding:3.5rem var(--sp-4) var(--sp-4);
   overflow:auto;
   cursor:grab;
   touch-action:pan-x pan-y;
@@ -1435,7 +1609,8 @@ input[type=checkbox]{accent-color:var(--accent)}
 .graph-canvas svg{display:block;max-width:none}
 .graph-detail{
   min-width:0;
-  max-height:76vh;
+  min-height:0;
+  height:100%;
   overflow:auto;
   padding:var(--sp-6);
   background:var(--panel);
@@ -1616,6 +1791,8 @@ input[type=checkbox]{accent-color:var(--accent)}
    §19  LEGEND, HINT AND FLOATING BUTTONS (over the canvas)
    ========================================================================== */
 
+/* The reference's legend is a key, not a paragraph: short labels, the long
+   sentence on the row's own tooltip. */
 .legend{
   position:absolute;
   left:var(--sp-5);
@@ -1623,9 +1800,9 @@ input[type=checkbox]{accent-color:var(--accent)}
   z-index:5;
   display:flex;
   flex-direction:column;
-  gap:var(--sp-2);
-  max-width:min(30rem,60%);
-  padding:var(--sp-4) var(--sp-5);
+  gap:5px;
+  max-width:20rem;
+  padding:9px 11px;
   background:#101520d9;
   border:1px solid var(--line);
   border-radius:var(--r-md);
@@ -1641,8 +1818,9 @@ input[type=checkbox]{accent-color:var(--accent)}
 .legend .row{
   display:flex;
   align-items:center;
-  gap:var(--sp-3);
-  font-size:var(--fs-xs);
+  gap:8px;
+  font-size:11px;
+  line-height:1.25;
   color:var(--muted);
 }
 .legend .sw{
@@ -1650,7 +1828,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   width:11px;
   height:11px;
   border-radius:3px;
-  border:1.5px solid var(--tick,var(--faint));
+  border:1.4px solid var(--tick,var(--faint));
   background:color-mix(in srgb,var(--tick,var(--faint)) 20%,transparent);
 }
 .legend .row.is-dashed .sw{border-style:dashed}
@@ -1662,19 +1840,26 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .legend .rule.dashed{border-top-style:dashed}
 .legend .rt{
-  margin-top:var(--sp-2);
-  padding-top:var(--sp-3);
+  margin-top:2px;
+  padding-top:7px;
   border-top:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  gap:5px;
 }
-.legend .note{font-size:var(--fs-xs);color:var(--faint);line-height:1.45}
+/* Full-width rather than the reference's left:50%/translate: a shrink-to-fit
+   box anchored at the midpoint can only use half the canvas, and this hint is
+   two lines long. */
 .hint{
   position:absolute;
-  left:50%;
+  left:0;
+  right:0;
   top:var(--sp-4);
-  transform:translateX(-50%);
+  padding:0 var(--sp-5);
   z-index:4;
   font-family:var(--mono);
   font-size:var(--fs-xs);
+  line-height:1.5;
   color:var(--faint);
   text-align:center;
   pointer-events:none;
@@ -1707,13 +1892,14 @@ input[type=checkbox]{accent-color:var(--accent)}
 
 @media(max-width:1400px){
   .brand .scopecaveat{max-width:none}
-  .searchbox input{width:6rem}
+  .searchbox input{width:5rem}
   .searchbox kbd{display:none}
 }
 
 @media(max-width:1250px){
   .topbar{gap:var(--sp-3)}
   .topbar .stats{margin-left:0;gap:var(--sp-5)}
+  .topbar .stats-note{text-align:left}
   .workspace{grid-template-columns:17rem minmax(0,1fr)}
   .paper-detail{border-left:0;border-top:1px solid var(--line)}
   .graph-workspace{padding:var(--sp-5)}
@@ -1725,8 +1911,23 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 
 @media(max-width:760px){
+  /* Below this width the columns have already stacked, so a one-screen shell
+     would put the canvas, the aside and the footer into three tiny boxes. The
+     page scrolls here instead, and the legend and floating buttons become
+     ordinary in-flow blocks under the canvas (see below). Every part of the
+     clamp has to be released together: leaving flex-basis:0 on the workspace
+     inside a now auto-height body would collapse it to nothing. */
+  body.mode-graph{height:auto;overflow:visible}
+  body.mode-graph #graph-workspace{flex:0 0 auto;display:block;overflow:visible}
+  body.mode-graph .graph-layout{flex:0 0 auto}
+  body.mode-graph .graph-complete-list{
+    max-height:none;
+    overflow:visible;
+    margin:var(--sp-5) 0;
+    padding:var(--sp-5) var(--sp-6);
+  }
   .topbar{padding:var(--sp-4);gap:var(--sp-3)}
-  .brand h1{font-size:var(--fs-xl)}
+  .brand h1{font-size:var(--fs-xl);white-space:normal}
   .brand .scopecaveat{font-size:.7rem}
   .toolbar{width:100%;gap:var(--sp-2)}
   .modes,
@@ -1749,15 +1950,14 @@ input[type=checkbox]{accent-color:var(--accent)}
   .card-body .codeblock{font-size:var(--fs-sm)}
   .definition-card{min-width:0}
   .paper-detail{border-top:1px solid var(--line)}
-  .paper-detail h2{font-size:var(--fs-2xl)}
   .paper-index{border-right:0;border-bottom:1px solid var(--line)}
   .trace-toolbar select{max-width:15rem}
   .graph-workspace{padding:var(--sp-4)}
   .graph-layout{display:flex;flex-direction:column}
   .canvas-wrap{width:100%}
-  .graph-canvas{height:60vh;min-height:24rem;max-height:60vh}
-  .graph-detail{border-left:0;border-top:1px solid var(--line);max-height:none}
-  .graph-detail h2{font-size:var(--fs-2xl)}
+  /* The hint is hidden here, so the band it was reserving goes back. */
+  .graph-canvas{height:60vh;min-height:24rem;max-height:60vh;padding:var(--sp-4)}
+  .graph-detail{border-left:0;border-top:1px solid var(--line);height:auto;max-height:none}
   .graph-heading-row{gap:var(--sp-4)}
   .graph-control{white-space:normal}
   .graph-control select{max-width:100%}
@@ -1777,17 +1977,36 @@ input[type=checkbox]{accent-color:var(--accent)}
   .hint{display:none}
 }
 
+/* The navigation toggle only means something where the Lean navigation rail is
+   on screen. On the proof map and in the paper tracer #workspace is hidden, so
+   the button had nothing to collapse; it appears with its rail. */
+@media(max-width:700px){
+  .topbar .toolbar .mobile-toggle{display:none}
+  body.mode-lean .topbar .toolbar .mobile-toggle{display:block}
+}
+
 /* =============================================================================
    §21  LARGE-TEXT MODE (text scale ≥ 150%)
    ========================================================================== */
 /* Column layouts stop being usable well before the text stops growing, so the
    same stacking the 760px breakpoint uses is applied at any viewport width. */
 
+/* The same reason as the 760px breakpoint: once the columns stack, one screen
+   cannot hold canvas, aside and footer, so the page scrolls. */
+.large-text body.mode-graph{height:auto;overflow:visible}
+.large-text body.mode-graph #graph-workspace{flex:0 0 auto;display:block;overflow:visible}
+.large-text body.mode-graph .graph-layout{flex:0 0 auto}
+.large-text body.mode-graph .graph-complete-list{
+  max-height:none;
+  overflow:visible;
+  margin:var(--sp-5) 0;
+  padding:var(--sp-5) var(--sp-6);
+}
 .large-text .workspace{grid-template-columns:minmax(12rem,17rem) minmax(0,1fr)}
 .large-text .graph-layout{display:flex;flex-direction:column}
 .large-text .canvas-wrap{flex-direction:column;width:100%}
-.large-text .graph-canvas{height:70vh;min-height:18rem}
-.large-text .graph-detail{max-height:none;border-left:0;border-top:1px solid var(--line)}
+.large-text .graph-canvas{height:70vh;min-height:18rem;padding:var(--sp-4)}
+.large-text .graph-detail{height:auto;max-height:none;border-left:0;border-top:1px solid var(--line)}
 .large-text .paper-detail{border-left:0;border-top:1px solid var(--line)}
 .large-text .legend{
   position:static;

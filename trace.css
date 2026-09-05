@@ -34,6 +34,14 @@
   gap:.35rem;
 }
 .trace-toolbar input{width:4.8rem}
+/* Page number, total and Go are one control: the label wraps as a unit and Go
+ * can never be orphaned onto the next line away from the field it acts on. */
+.trace-toolbar .trace-pagebox{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:.35rem;
+}
 .trace-toolbar .trace-spacer{flex:1}
 /* The classification key sits in the toolbar, i.e. above the page stack, and
  * never inside .paper-scroll: an overlay there would cover the top of the

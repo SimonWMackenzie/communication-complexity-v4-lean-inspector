@@ -22,6 +22,14 @@
   }
   function setMode(next) {
     mode=next; $('workspace').hidden=next!=='lean'; $('paper-workspace').hidden=next!=='paper';
+    /* The current view is on the body so the design layer can shape the shell
+     * around it: the dependency explorer is one fixed screen with its own
+     * internal scrolling, while the paper tracer and the Lean inspector are
+     * documents and keep the page's. mode-lean is also what tells the mobile
+     * navigation toggle that it has a rail to collapse. */
+    document.body.classList.toggle('mode-graph',next==='graph');
+    document.body.classList.toggle('mode-lean',next==='lean');
+    document.body.classList.toggle('mode-paper',next==='paper');
     $('open-paper-trace').setAttribute('aria-pressed',String(next==='paper'));
     /* Every view has a pressed top-bar button: the Lean view is entered through
      * "Main theorem", so that button reports the current view too. */
@@ -173,7 +181,8 @@
     /* The classification key: what a highlight's colour means. */
     const key=el('div','tkey');key.setAttribute('aria-label','Highlight colour key');
     for(const [cls,text,title]of keyRows){const k=el('span','k is-'+cls),swatch=el('span','kb');swatch.style.setProperty('--tick',tint[cls]);k.title=title;k.append(swatch,el('span',null,text));key.append(k);}
-    toolbar.append(paper,pageLabel,button('Go',go),key,el('span','trace-spacer'),zoomBar,button('Selected statement ↓',()=>{$('paper-detail').scrollIntoView({block:'start'});},'trace-mobile-detail'),button('Lean inspector',()=>openLean(api.DATA.root)));
+    const pageBox=el('div','trace-pagebox');pageBox.append(pageLabel,button('Go',go));
+    toolbar.append(paper,pageBox,key,el('span','trace-spacer'),zoomBar,button('Selected statement ↓',()=>{$('paper-detail').scrollIntoView({block:'start'});},'trace-mobile-detail'),button('Lean inspector',()=>openLean(api.DATA.root)));
     const layout=el('div','paper-layout'),index=el('nav','paper-index');index.setAttribute('aria-label','Paper statement index');const head=el('div','paper-index-head'),search=el('input');search.id='trace-search';search.type='search';search.placeholder='Find a paper statement…';search.setAttribute('aria-label','Search paper statements');search.addEventListener('input',renderIndex);
     const flag=el('label'),checkbox=el('input');checkbox.id='trace-unmapped';checkbox.type='checkbox';checkbox.addEventListener('change',()=>{renderIndex();filterHighlights();});flag.append(checkbox,document.createTextNode(' Show unmapped paper locations'));const count=el('div','trace-index-count');count.id='trace-index-count';head.append(search,flag,count);const list=el('div','paper-index-list');list.id='paper-index-list';index.append(head,list);
     const scroll=el('div','paper-scroll');scroll.id='paper-scroll';const stack=el('div','paper-stack');stack.id='paper-stack';scroll.append(stack);const detail=el('aside','paper-detail');detail.id='paper-detail';detail.setAttribute('aria-live','polite');layout.append(index,scroll,detail);main.append(toolbar,layout);$('workspace').before(main);
@@ -182,7 +191,12 @@
     window.addEventListener('hashchange',fromHash);
     new ResizeObserver(()=>requestAnimationFrame(alignSelectedLocation)).observe($('paper-scroll'));
     document.addEventListener('v4-declaration-selected',()=>setMode('lean'));
-    document.addEventListener('keydown',e=>{if(e.key==='/'&&mode==='paper'&&!e.target.matches('input,textarea,select,[contenteditable=true]')){e.preventDefault();e.stopImmediatePropagation();$('trace-search').focus();}},true);
+    /* e.target is only guaranteed to be an EventTarget: a keydown dispatched on
+     * document or window has no matches(). */
+    document.addEventListener('keydown',e=>{
+      const typing=e.target instanceof Element&&e.target.matches('input,textarea,select,[contenteditable=true]');
+      if(e.key==='/'&&mode==='paper'&&!typing){e.preventDefault();e.stopImmediatePropagation();$('trace-search').focus();}
+    },true);
     const incoming=location.hash;showPaper('reader');
     if(incoming){try{history.replaceState(null,'',incoming);}catch(_){}}
     if(!fromHash())selectAnchor(defaultAnchor('reader').id);
