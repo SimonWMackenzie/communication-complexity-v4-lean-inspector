@@ -187,3 +187,46 @@ browser against the local preview and covers paper tracing, definition cards,
 graph search/paths/arrows, mobile layout, 200-percent text and page errors.
 Pass the installed Playwright module path as its first argument when needed.
 Run node test_graph.cjs for the pure graph-data tests as well.
+
+## Density revision
+
+A third pass measured the explorer at small viewports and closed the two
+failures it found.
+
+**The graph view has no page heading.** The reference spends nothing between
+its shortcut strip and its canvas; ours spent an eyebrow, an `h2`, a subtitle
+paragraph and their margins — 154px at an 800x450 viewport, where the one-screen
+clamp then left `#graph-canvas` 68px and put the footer under the heading. The
+block is gone. The `View` selector moved into the status bar, and the caption
+that says which relation the arrows draw is now a single mono line beside the
+counts. Both captions were shortened to that job: what the view is for is said
+by the drawing, and how to read it by the hint over the canvas. The source
+caption still states that the arrows are compiler-recorded source references and
+not dependencies extracted from kernel proof terms — it wraps rather than
+ellipsising, because a caveat that is cut off is worse than a second line.
+The order is now shortcut strip, one status bar, canvas and aside, footer.
+
+**The one-screen shell is released where it cannot hold the drawing.** The clamp
+is a promise that the legend, the floating buttons and the footer are never below
+the fold, and it is worth keeping only while the canvas still has a screen to be
+on. It is now released at 820px and under of viewport height, and at 1100px and
+under of width, in addition to the existing 760px and large-text releases: the
+canvas takes `clamp(20rem, 70vh, 44rem)`, the aside matches it and scrolls inside
+itself, and the page scrolls with the footer after the graph. The clamped mode
+also gained a 20rem floor under `.graph-layout`, so an unexpectedly tall header
+degrades by scrolling the workspace rather than by collapsing the canvas.
+
+**The header no longer wraps to four rows at medium widths.** The scope caveat
+is clamped to two lines below 1400px, with the full sentence on its `title`;
+the running subtitle, which only names the two papers, is hidden below 1100px
+as the reference hides its own; the counts keep a width cap so they stay beside
+the identity instead of claiming a row of their own; and the search box shrinks
+without growing, so the proof-index download stays on the control row.
+
+Measured, graph view, `body.mode-graph`: at 1440x900 the header is 165px, the
+status bar is one 42px line, the canvas is 461px, `scrollHeight` equals
+`innerHeight` and the legend, floating buttons and footer all end at or above
+900px. At 1000x800 the header is 164px and the canvas 560px. At 800x450 the
+header is 193px (was 275px), the canvas is 320px with all 14 steps drawn, and
+the footer starts below the canvas instead of over it. At 390x844 and at 200%
+text there is no page-level horizontal overflow in any of the three views.

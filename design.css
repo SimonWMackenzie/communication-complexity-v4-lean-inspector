@@ -198,18 +198,22 @@ body{
   line-height:1.6;
   -webkit-font-smoothing:antialiased;
 }
-body.mode-graph{height:100%;overflow:hidden}
+body.mode-graph{height:100%;overflow:auto}
 body.mode-graph #graph-workspace{
   flex:1 1 0;
   min-height:0;
   margin:0 auto;             /* not `auto`: vertical auto margins would eat   */
   display:flex;              /* the free space instead of letting flex grow   */
   flex-direction:column;
-  overflow:hidden;
+  overflow:auto;             /* only ever scrolls if the floor below binds    */
 }
 /* The layout is a grid, so its row has to be told to take the height the flex
-   line gives it; an auto row would size to the drawing and overflow instead. */
-body.mode-graph .graph-layout{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr)}
+   line gives it; an auto row would size to the drawing and overflow instead.
+   The floor is what makes an unexpectedly tall header degrade instead of
+   collapsing: below 20rem the shell stops shrinking the canvas and the
+   workspace scrolls. §20 releases the clamp entirely where the floor would
+   bind by design rather than by accident. */
+body.mode-graph .graph-layout{flex:1 1 0;min-height:20rem;grid-template-rows:minmax(0,1fr)}
 body.mode-graph .canvas-wrap{min-height:0}
 body.mode-graph .graph-complete-list{
   flex:0 0 auto;
@@ -667,19 +671,32 @@ input[type=checkbox]{accent-color:var(--accent)}
   text-overflow:ellipsis;
   color:var(--ink);
 }
+/* Two lines at most: the running subtitle names the two papers, which every
+   card that links to them names again, so it may never set the height of the
+   header. Below 1100px it goes entirely (§20). */
 .brand .sub{
-  display:block;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
   font-family:var(--mono);
   font-size:10.5px;
   line-height:1.35;
   color:var(--muted);
+  overflow:hidden;
   overflow-wrap:anywhere;
 }
+/* The caveat is the one line of the header that states what the machine check
+   does not cover, so it is printed in full wherever the header can afford it;
+   only below 1100px is it clamped, and there its `title` still carries the
+   whole sentence. */
 .brand .scopecaveat{
+  display:block;
   max-width:88rem;
   font-size:10.5px;
   line-height:1.35;
   color:var(--muted);
+  overflow:visible;
 }
 .brand .scopecaveat b{color:var(--ink);font-weight:600}
 .brand .scopecaveat .ext{color:var(--axiom);font-weight:600}
@@ -1444,24 +1461,12 @@ input[type=checkbox]{accent-color:var(--accent)}
   margin:auto;
   padding:var(--sp-5);
 }
-.graph-heading-row{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:var(--sp-7);
-  margin-bottom:var(--sp-4);
-}
-.graph-heading-row h2{
-  margin:0;
-  font-size:var(--fs-2xl);
-  letter-spacing:-.02em;
-}
-.graph-heading-row p{
-  max-width:62rem;
-  margin:0;
-  font-size:var(--fs-md);
-  color:var(--muted);
-}
+/* There is deliberately no heading block here. The reference puts nothing
+   between the shortcut strip and the canvas, and a title that repeats what the
+   pressed navigation pill already says is chrome the drawing pays for: at
+   800x450 the eyebrow, heading and subtitle paragraph were 154px, and the
+   canvas was left with 68. The view selector and the relation caption live in
+   the status bar below. */
 
 /* --- Source controls ------------------------------------------------------ */
 
@@ -1548,16 +1553,34 @@ input[type=checkbox]{accent-color:var(--accent)}
 
 /* --- Status bar ----------------------------------------------------------- */
 
+/* The only band of chrome above the drawing: which view, what is drawn, what
+   the arrows mean, the zoom pill and the export. */
 .graph-statusbar{
   display:flex;
   align-items:center;
   flex-wrap:wrap;
-  gap:var(--sp-2);
-  margin:var(--sp-3) 0;
+  gap:var(--sp-2) var(--sp-4);
+  margin:0 0 var(--sp-3);
 }
+.graph-statusbar .graph-control{flex:0 0 auto}
+.graph-statusbar .graph-control select{font-size:var(--fs-xs)}
 .graph-statusbar #graph-count{
-  flex:1 1 28rem;
+  flex:1 1 18rem;
+  min-width:0;
   font-size:var(--fs-sm);
+  color:var(--muted);
+}
+/* One mono line next to the counts: it says which relation the arrows are,
+   which is the one thing about this drawing that cannot be guessed from it.
+   It wraps rather than ellipsising — the source caption's second clause is the
+   caveat, and a caveat that is cut off is worse than a second line. */
+.graph-statusbar #graph-subtitle{
+  flex:1 1 22rem;
+  min-width:0;
+  margin:0;
+  font-family:var(--mono);
+  font-size:var(--fs-xs);
+  line-height:1.5;
   color:var(--muted);
 }
 .graph-statusbar #graph-count .o{font-family:var(--mono);white-space:nowrap}
@@ -1891,7 +1914,18 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 
 @media(max-width:1400px){
-  .brand .scopecaveat{max-width:none}
+  /* Below the widest layout the caveat wraps to four or five lines and starts
+     setting the height of the whole header, so it is clamped to two — its
+     `title` keeps the full sentence, which is the part that matters. */
+  .topbar{padding:9px 14px;gap:8px 12px}
+  .brand .scopecaveat{
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    line-clamp:2;
+    max-width:none;
+    overflow:hidden;
+  }
   .searchbox input{width:5rem}
   .searchbox kbd{display:none}
 }
@@ -1905,9 +1939,58 @@ input[type=checkbox]{accent-color:var(--accent)}
   .graph-workspace{padding:var(--sp-5)}
   .graph-layout{grid-template-columns:minmax(0,1fr) 20rem}
   .graph-detail{padding:var(--sp-5)}
-  .graph-heading-row{flex-wrap:wrap}
-  .graph-heading-row h2{font-size:var(--fs-2xl)}
   .legend{max-width:min(24rem,72%)}
+  /* The control row must stay one line down to about 1000px: the search box is
+     the only member that can give width back, so it is the one that shrinks —
+     and it must not grow either, or it takes the width the download button
+     needs and pushes that button onto a row of its own. */
+  .searchbox{flex:0 1 7rem;min-width:5.5rem}
+  .searchbox input{width:100%;min-width:0}
+}
+
+/* --- Header density at the widths where it wraps to four rows ------------- */
+/* Between 800 and 1100px the identity block, the counts and the control row
+   each took a line of their own and the header was 275px — more than half of a
+   450px screen. The reference keeps its identity to one clamped line here, so
+   the running subtitle goes: it names the two papers, and every card that
+   links to them names them again. */
+@media(max-width:1100px){
+  .brand{flex:1 1 20rem;gap:1px}
+  .brand .sub:not(.scopecaveat){display:none}
+  /* The counts keep their cap so they stay beside the identity instead of
+     claiming a row: with the caveat clamped, that row costs nothing extra. */
+  .topbar .stats{gap:6px 10px}
+}
+/* Below 900px the counts need a narrower cap to keep sharing the identity's
+   row — two rows of counts beside the identity is shorter than one row of
+   counts below it. */
+@media(max-width:900px){
+  .topbar .stats{max-width:26rem}
+}
+
+/* --- The one-screen shell, released where it cannot hold the drawing ------ */
+/* The clamp is a promise that the legend, the floating buttons and the footer
+   are never below the fold. It is worth keeping only while the canvas still
+   has a screen to be on: at 450px tall, or at the widths where the header
+   needs three rows, the header and the status bar leave the canvas nothing and
+   the footer lands on top of it. Below those thresholds the page scrolls, the
+   canvas keeps a real minimum height, and the footer follows the graph.
+   Bounded below at 761px so the stacked mobile layout keeps its own rules. */
+@media (min-width:761px) and (max-height:820px),(min-width:761px) and (max-width:1100px){
+  body.mode-graph{height:auto;min-height:100%;overflow:auto}
+  body.mode-graph #graph-workspace{flex:1 1 auto;min-height:0;overflow:visible}
+  body.mode-graph .graph-layout{flex:1 1 auto;min-height:20rem;grid-template-rows:auto}
+  /* Canvas and aside state the same height, so the drawing keeps a real
+     minimum, the aside scrolls inside itself as it does in the clamped shell,
+     and neither one lengthens the row past the other. */
+  body.mode-graph .graph-canvas,
+  body.mode-graph .graph-detail{height:clamp(20rem,70vh,44rem);max-height:none}
+  body.mode-graph .graph-complete-list{
+    max-height:none;
+    overflow:visible;
+    margin:var(--sp-5) 0 0;
+    padding:var(--sp-5) var(--sp-6);
+  }
 }
 
 @media(max-width:760px){
@@ -1958,12 +2041,13 @@ input[type=checkbox]{accent-color:var(--accent)}
   /* The hint is hidden here, so the band it was reserving goes back. */
   .graph-canvas{height:60vh;min-height:24rem;max-height:60vh;padding:var(--sp-4)}
   .graph-detail{border-left:0;border-top:1px solid var(--line);height:auto;max-height:none}
-  .graph-heading-row{gap:var(--sp-4)}
   .graph-control{white-space:normal}
   .graph-control select{max-width:100%}
   .source-controls{padding:var(--sp-4);gap:var(--sp-3)}
   .graph-search-wrap{flex-basis:100%}
-  .graph-statusbar #graph-count{flex-basis:100%}
+  /* One item per row here: there is no width left to share. */
+  .graph-statusbar #graph-count,
+  .graph-statusbar #graph-subtitle{flex-basis:100%}
   #graph-node-list{display:block}
   .legend{
     position:static;
@@ -2003,6 +2087,9 @@ input[type=checkbox]{accent-color:var(--accent)}
   padding:var(--sp-5) var(--sp-6);
 }
 .large-text .workspace{grid-template-columns:minmax(12rem,17rem) minmax(0,1fr)}
+.large-text .graph-statusbar #graph-subtitle{flex-basis:100%}
+.large-text .brand .sub,
+.large-text .brand .scopecaveat{display:block;overflow:visible}
 .large-text .graph-layout{display:flex;flex-direction:column}
 .large-text .canvas-wrap{flex-direction:column;width:100%}
 .large-text .graph-canvas{height:70vh;min-height:18rem;padding:var(--sp-4)}

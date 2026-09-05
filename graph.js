@@ -126,9 +126,12 @@
   function switchView(next){
     viewMode=next;$('graph-mode').value=next;$('source-controls').hidden=next!=='source';
     setHint(next);
+    /* The caption is a status-bar line now, not a heading paragraph: it names
+     * the relation the arrows draw and nothing else. What the view is for is
+     * said by the drawing; how to read it is said by the hint. */
     $('graph-subtitle').textContent=next==='overview'
-      ?'Mathematical ingredients → results that use them. Select a step to read its explanation, paper statement, provenance and Lean components.'
-      :'Declaration → name it references. These are compiler-recorded source references, not dependencies extracted from kernel proof terms.';
+      ?'arrows: curated mathematical dependence between steps of the papers'
+      :'arrows: compiler-recorded source references, not dependencies extracted from kernel proof terms';
     for(const [id,mode]of [['route-curated','overview'],['route-source','source']])
       if($(id))$(id).setAttribute('aria-pressed',String(next===mode));
     render();
@@ -447,6 +450,9 @@
       el('span','cmp','the companion paper'),document.createTextNode(') and '),
       el('span','ext','the balanced-family theorem'),
       document.createTextNode(' (proved in this paper, outside Lean). Runtime, effectivity and the ETH consequence are outside the formalized scope.'));
+    /* Narrow headers clamp this to two lines, so the full sentence has to stay
+     * reachable rather than silently truncated. */
+    caveat.title=caveat.textContent;
     brand.append(caveat);
 
     const modes=pill('modes');modes.setAttribute('role','group');modes.setAttribute('aria-label','View');
@@ -589,8 +595,12 @@
     try{const r=await fetch('proof-map.json');if(!r.ok)throw new Error('Proof map could not load');map=await r.json();}catch(error){console.error(error);return;}
     window.V4ProofMap=map;
     const main=el('section','graph-workspace');main.id='graph-workspace';main.hidden=true;
-    const heading=el('div','graph-heading-row'),titles=el('div');titles.append(el('div','eyebrow','Explore the proof'),el('h2',null,'How the result fits together'));const sub=el('p');sub.id='graph-subtitle';titles.append(sub);
-    const mode=selectControl('graph-mode','View',[['overview','Mathematical proof map'],['source','Lean source references']],'overview',switchView);heading.append(titles,mode);main.append(heading);
+    /* No page heading between the shortcut strip and the drawing — the
+     * reference spends none, and an eyebrow, an h2 and a paragraph measured
+     * 154px of chrome that the canvas had to give up at short viewports. The
+     * view selector and the relation caption move into the status bar, which
+     * is the one line of chrome this view keeps above the canvas. */
+    const mode=selectControl('graph-mode','View',[['overview','Mathematical proof map'],['source','Lean source references']],'overview',switchView);
     const controls=el('div','source-controls');controls.id='source-controls';controls.hidden=true;
     const searchWrap=el('div','graph-search-wrap'),search=el('input'),results=el('div','graph-search-results');search.id='graph-search';search.type='search';search.placeholder='Find a theorem or definition…';search.setAttribute('aria-label','Find graph declaration');results.id='graph-search-results';results.hidden=true;
     const choose=id=>{focus=id;selected=id;pathIds=null;results.hidden=true;search.value='';render();};
@@ -618,7 +628,11 @@
     }
     controls.append(filter);
     controls.append(btn('Main theorem',()=>{choose(g.root);}),btn('Path from main theorem',()=>findPath(g.cards.has(selected)?selected:focus)));const name=el('div','graph-focus');name.id='graph-focus';controls.append(name);main.append(controls);
-    const bar=el('div','graph-statusbar'),counter=el('div');counter.id='graph-count';counter.setAttribute('role','status');bar.append(counter);const zoomText=el('output');zoomText.id='graph-zoom';
+    const bar=el('div','graph-statusbar'),counter=el('div');counter.id='graph-count';counter.setAttribute('role','status');
+    const sub=el('p','graph-subtitle');sub.id='graph-subtitle';
+    /* View selector, then what is drawn, then the caption saying what the
+     * arrows mean, then the zoom pill and the export. One strip. */
+    bar.append(mode,counter,sub);const zoomText=el('output');zoomText.id='graph-zoom';
     const zoomGroup=el('div','control-group');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Graph zoom');
     /* "Fit width" resets the zoom, so it joins the pill as a fourth child. */
     zoomGroup.append(btn('−',()=>{zoom=Math.max(.3,zoom-.1);applyZoom();}),zoomText,btn('+',()=>{zoom=Math.min(2.5,zoom+.1);applyZoom();}),btn('Fit width',fit));
