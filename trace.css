@@ -227,7 +227,9 @@
   min-height:0;
   max-height:15rem;
 }
-.large-text .paper-index-list{max-height:10rem}
+/* At 200% text a 10rem list shows barely one row, so it grows with the text
+ * while staying a minority of the viewport. */
+.large-text .paper-index-list{max-height:min(20rem,30vh)}
 .large-text .paper-scroll{
   height:75vh;
   min-height:20rem;

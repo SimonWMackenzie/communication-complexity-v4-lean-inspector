@@ -28,7 +28,7 @@
   }
   function detailCard(id){
     selected=id;const d=g.cards.get(id),host=$('graph-detail');host.replaceChildren();
-    host.append(el('div','eyebrow','Lean source'),el('h2',null,short(id)),el('p','graph-full-name',id));
+    host.append(el('div','eyebrow','Lean source'),el('h2','lean-name',short(id)),el('span','badge',d.kind||'declaration'),el('p','graph-full-name',id));
     const prose=typeof d.plainEnglish==='string'?d.plainEnglish:d.plainEnglish?.summary;
     if(prose)host.append(el('p',null,prose));
     host.append(el('p','graph-detail-note',G.isTerminal(d)?'This is a terminal reference card: its standalone source body is not embedded. That does not mean it has no mathematical dependencies.':'A source-indexed declaration. Its exact statement, surrounding definitions and available axiom evidence are in the Lean inspector.'));
@@ -43,12 +43,12 @@
     host.append(actions);
     if(d.traceAnchors?.length){host.append(el('h3',null,'In the papers'));for(const a of d.traceAnchors)linkPaper(a,host);}
     const references=el('details');references.append(el('summary',null,'All direct references ('+g.out.get(id).length+')'));
-    for(const target of g.out.get(id))references.append(btn(short(target),()=>detailEdge({source:id,target,pairs:[[id,target]]}),'graph-paper-link'));
+    for(const target of g.out.get(id))references.append(btn(short(target),()=>detailEdge({source:id,target,pairs:[[id,target]]}),'graph-paper-link is-lean'));
     host.append(references);highlight(id);
   }
   function detailOverview(id){
     const n=map.nodes.find(n=>n.id===id);if(!n)return;selected=id;const host=$('graph-detail');host.replaceChildren();
-    host.append(el('div','eyebrow',n.external?'External mathematical input':'Mathematical proof step'),el('h2',null,n.title),el('p',null,n.summary));
+    host.append(el('div','eyebrow',n.external?'External mathematical input':'Mathematical proof step'),el('h2',null,n.title),el('span','badge'+(n.external?' external':''),n.external?'External input':'Proof step'),el('p',null,n.summary));
     if(n.external)host.append(el('p','graph-detail-note','The paper supplies or cites this mathematical input. The linked Lean declarations state or consume its contract; they do not prove its existence.'));
     host.append(el('h3',null,'Read this step'));for(const id of n.paperAnchors)linkPaper(id,host);
     host.append(el('h3',null,'Lean components'));
@@ -61,10 +61,10 @@
   }
   function detailGroup(node){
     const host=$('graph-detail');host.replaceChildren();selected=node.id;
-    host.append(el('div','eyebrow','Grouped source references'),el('h2',null,short(node.id)),el('p','graph-full-name',node.id),
+    host.append(el('div','eyebrow','Grouped source references'),el('h2','lean-name',short(node.id)),el('p','graph-full-name',node.id),
       el('p',null,node.members.length+' reached declarations in this module. A grouped edge means that at least one declaration references a declaration in the other group. This is not a module-import edge.'));
     const input=el('input');input.type='search';input.placeholder='Filter declarations in this group';input.setAttribute('aria-label','Filter grouped declarations');
-    const list=el('div','graph-group-list'),draw=()=>{list.replaceChildren();const items=node.members.filter(id=>id.toLowerCase().includes(input.value.toLowerCase()));for(const id of items)list.append(btn(short(id),()=>detailCard(id),'graph-paper-link'));};
+    const list=el('div','graph-group-list'),draw=()=>{list.replaceChildren();const items=node.members.filter(id=>id.toLowerCase().includes(input.value.toLowerCase()));for(const id of items)list.append(btn(short(id),()=>detailCard(id),'graph-paper-link is-lean'));};
     input.addEventListener('input',draw);host.append(input,list);draw();highlight(node.id);
   }
   function detailEdge(edge){
@@ -123,7 +123,7 @@
       drawGraph(view.nodes,view.edges,G.layout(view.nodes),false);
       $('graph-focus').textContent=focus;
       $('graph-count').textContent='Showing '+view.nodes.length+' of '+view.groupCount+(view.grouped?' module groups':' cards')+' · '+view.edges.length+' visible / '+view.allEdges.length+(view.grouped?' eligible grouped arrows':' eligible edges')+' · '+view.edgePairs.length+' declaration-reference pairs (including within groups) · '+view.reached+' cards reached · '+view.filteredCards+' terminal cards filtered';
-      for(const id of view.eligible)listing.append(btn(short(id),()=>detailCard(id),'graph-paper-link'));
+      for(const id of view.eligible)listing.append(btn(short(id),()=>detailCard(id),'graph-paper-link is-lean'));
       const full=g.cards.get(selected)?selected:focus;detailCard(full);
     }
     fit();
@@ -154,8 +154,9 @@
     controls.append(btn('Main theorem',()=>{choose(g.root);}),btn('Path from main theorem',()=>findPath(g.cards.has(selected)?selected:focus)));const name=el('div','graph-focus');name.id='graph-focus';controls.append(name);main.append(controls);
     const bar=el('div','graph-statusbar'),count=el('div');count.id='graph-count';count.setAttribute('role','status');bar.append(count);const zoomText=el('output');zoomText.id='graph-zoom';
     const zoomGroup=el('div','control-group');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Graph zoom');
-    zoomGroup.append(btn('−',()=>{zoom=Math.max(.3,zoom-.1);applyZoom();}),zoomText,btn('+',()=>{zoom=Math.min(2.5,zoom+.1);applyZoom();}));
-    bar.append(zoomGroup,btn('Fit width',fit),btn('Export this graph',download));main.append(bar);
+    /* "Fit width" resets the zoom, so it joins the pill as a fourth child. */
+    zoomGroup.append(btn('−',()=>{zoom=Math.max(.3,zoom-.1);applyZoom();}),zoomText,btn('+',()=>{zoom=Math.min(2.5,zoom+.1);applyZoom();}),btn('Fit width',fit));
+    bar.append(zoomGroup,btn('Export this graph',download));main.append(bar);
     const message=el('p','graph-message');message.id='graph-message';message.setAttribute('role','status');main.append(message);
     const layout=el('div','graph-layout'),canvas=el('div','graph-canvas'),detail=el('aside','graph-detail');canvas.id='graph-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label','Graph canvas. Scroll to move, or drag empty canvas space.');detail.id='graph-detail';detail.setAttribute('aria-live','polite');layout.append(canvas,detail);main.append(layout);
     let pan=null;canvas.addEventListener('pointerdown',e=>{if(e.target.closest('[data-graph-node],.proof-edge'))return;pan={x:e.clientX,y:e.clientY,left:canvas.scrollLeft,top:canvas.scrollTop};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(pan){canvas.scrollLeft=pan.left+pan.x-e.clientX;canvas.scrollTop=pan.top+pan.y-e.clientY;}});canvas.addEventListener('pointerup',()=>pan=null);canvas.addEventListener('pointercancel',()=>pan=null);

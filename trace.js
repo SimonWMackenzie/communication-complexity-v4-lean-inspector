@@ -16,6 +16,9 @@
   function setMode(next) {
     mode=next; $('workspace').hidden=next!=='lean'; $('paper-workspace').hidden=next!=='paper';
     $('open-paper-trace').setAttribute('aria-pressed',String(next==='paper'));
+    /* Every view has a pressed top-bar button: the Lean view is entered through
+     * "Main theorem", so that button reports the current view too. */
+    $('show-root').setAttribute('aria-pressed',String(next==='lean'));
     document.dispatchEvent(new CustomEvent('v4-view-changed',{detail:{mode:next}}));
     if(next==='paper'&&selectedAnchor){replaceHash(selectedAnchor);requestAnimationFrame(alignSelectedLocation);}
   }
@@ -110,8 +113,18 @@
   function addLinks(d,host){if(!api||!d.traceAnchors?.length)return;const links=el('div','trace-source-links');links.append(el('span','trace-links-label','Trace this declaration in the papers'));for(const id of d.traceAnchors){const a=byAnchor.get(id);if(a)links.append(button((a.paperId==='reader'?'Reader: ':'Formal: ')+a.title,()=>selectAnchor(id)));}host.append(links);}
   function applyZoom(){if(!$('paper-stack'))return;for(const p of $('paper-stack').children){p.style.width=zoom+'%';p.style.maxWidth=zoom===100?'1050px':'none';}$('trace-zoom-value').textContent=zoom+'%';}
   function fromHash(){const p=new URLSearchParams(location.hash.slice(1));if(p.has('anchor')){const a=byAnchor.get(p.get('paper')+':'+p.get('anchor'));if(a){selectAnchor(a.id);return true;}}if(p.has('decl')){setMode('lean');return true;}return false;}
+  /* The three detail panels open the same way: eyebrow, title, kind badge,
+   * prose. The Lean head is the one built in the offline template, so its
+   * eyebrow is added and its badges are moved below the sub-line here; what
+   * fills those elements is untouched. */
+  function orderSelectedHead(){
+    const head=document.querySelector('.selected-head'),badges=$('selected-badges'),sub=$('selected-sub');
+    if(!head)return;
+    if(!head.querySelector('.eyebrow'))head.prepend(el('div','eyebrow','Lean declaration'));
+    if(badges&&sub)sub.after(badges);
+  }
   function start(event){
-    api=event.detail;trace=api.DATA.trace;if(!trace)return;
+    api=event.detail;orderSelectedHead();trace=api.DATA.trace;if(!trace)return;
     for(const a of trace.anchors)byAnchor.set(a.id,a);for(const p of trace.papers)byPaper.set(p.id,p);
     const main=el('section');main.id='paper-workspace';main.hidden=true;
     const toolbar=el('div','trace-toolbar'),paper=el('select');paper.id='trace-paper';paper.setAttribute('aria-label','Choose manuscript');for(const p of trace.papers){const o=el('option',null,p.title);o.value=p.id;paper.append(o);}paper.addEventListener('change',()=>showPaper(paper.value));
@@ -119,8 +132,10 @@
     const go=()=>{const n=Math.max(1,Math.min(activePaper.pages.length,Number(page.value)||1));page.value=n;const target=$('paper-page-'+n),frame=$('paper-scroll');frame.scrollTo({top:frame.scrollTop+target.getBoundingClientRect().top-frame.getBoundingClientRect().top,behavior:'instant'});};page.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
     const zoomValue=el('output');zoomValue.id='trace-zoom-value';
     const zoomGroup=el('div','control-group');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Page zoom');
-    zoomGroup.append(button('−',()=>{zoom=Math.max(60,zoom-10);applyZoom();}),zoomValue,button('+',()=>{zoom=Math.min(200,zoom+10);applyZoom();}));
-    toolbar.append(paper,pageLabel,button('Go',go),el('span','trace-spacer'),zoomGroup,button('Fit width',()=>{zoom=100;applyZoom();}),button('Selected statement ↓',()=>{$('paper-detail').scrollIntoView({block:'start'});},'trace-mobile-detail'),button('Lean inspector',()=>openLean(api.DATA.root)));
+    /* "Fit width" is the zoom's reset, so it sits inside the pill as a fourth
+     * child, the way the top bar's text-size reset does. */
+    zoomGroup.append(button('−',()=>{zoom=Math.max(60,zoom-10);applyZoom();}),zoomValue,button('+',()=>{zoom=Math.min(200,zoom+10);applyZoom();}),button('Fit width',()=>{zoom=100;applyZoom();}));
+    toolbar.append(paper,pageLabel,button('Go',go),el('span','trace-spacer'),zoomGroup,button('Selected statement ↓',()=>{$('paper-detail').scrollIntoView({block:'start'});},'trace-mobile-detail'),button('Lean inspector',()=>openLean(api.DATA.root)));
     const layout=el('div','paper-layout'),index=el('nav','paper-index');index.setAttribute('aria-label','Paper statement index');const head=el('div','paper-index-head'),search=el('input');search.id='trace-search';search.type='search';search.placeholder='Find a paper statement…';search.setAttribute('aria-label','Search paper statements');search.addEventListener('input',renderIndex);
     const flag=el('label'),checkbox=el('input');checkbox.id='trace-unmapped';checkbox.type='checkbox';checkbox.addEventListener('change',()=>{renderIndex();filterHighlights();});flag.append(checkbox,document.createTextNode(' Show unmapped paper locations'));const count=el('div','trace-index-count');count.id='trace-index-count';head.append(search,flag,count);const list=el('div','paper-index-list');list.id='paper-index-list';index.append(head,list);
     const scroll=el('div','paper-scroll');scroll.id='paper-scroll';const stack=el('div','paper-stack');stack.id='paper-stack';scroll.append(stack);const detail=el('aside','paper-detail');detail.id='paper-detail';detail.setAttribute('aria-live','polite');layout.append(index,scroll,detail);main.append(toolbar,layout);$('workspace').before(main);

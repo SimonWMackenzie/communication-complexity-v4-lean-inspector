@@ -55,7 +55,7 @@
   /* -- Ink ----------------------------------------------------------------- */
   --ink:#172c43;             /* body text (tested literal)                    */
   --muted:#52657a;           /* secondary text                                */
-  --faint:#67798b;           /* tertiary text, metadata                       */
+  --faint:#5a6b7e;           /* tertiary text, metadata (AA on --accent-soft) */
 
   /* -- Navy (top bar and the conclusion node) ------------------------------- */
   --navy:#102a43;
@@ -226,9 +226,13 @@ button[aria-pressed=true]{
   color:var(--accent);
 }
 button:disabled{opacity:.45}
+/* A select is the one control the engine sizes itself (Chrome forces
+   line-height:normal), so its height is stated rather than derived from
+   padding; the fill matches every other control. */
 select{
-  padding:var(--sp-3) var(--sp-4);
-  background:var(--raised);
+  height:var(--control-h);
+  padding:0 var(--sp-4);
+  background:var(--panel);
 }
 input[type=search],
 input[type=number],
@@ -238,13 +242,15 @@ input[type=checkbox]{accent-color:var(--accent)}
 /* --- The control group: one grouped pill for every stepper ---------------- */
 /* Used by the top bar's text size, the paper zoom and the graph zoom. */
 
+/* The pill is exactly --control-h tall: 2px border + 2 × --sp-0 padding +
+   the 30.78px inner button, so it lines up with its neighbouring controls. */
 .control-group,
 .scale-controls{
   display:inline-flex;
   flex:0 0 auto;
   align-items:center;
   gap:var(--sp-0);
-  padding:var(--sp-1);
+  padding:var(--sp-0);
   border:1px solid var(--line);
   border-radius:var(--r-pill);
   background:var(--panel);
@@ -313,6 +319,14 @@ input[type=checkbox]{accent-color:var(--accent)}
   letter-spacing:-.02em;
   margin:var(--sp-2) 0 var(--sp-4);
   overflow-wrap:anywhere;
+}
+/* A Lean identifier is a name, not prose: set it like .selected-title so it
+   breaks on the dots instead of hard-breaking serif across four lines. */
+.graph-detail h2.lean-name{
+  font-family:var(--mono);
+  font-size:var(--fs-2xl);
+  letter-spacing:0;
+  line-height:1.35;
 }
 .paper-detail p,
 .graph-detail p,
@@ -406,6 +420,11 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
   box-shadow:inset 3px 0 var(--accent);
 }
+/* Row variant: the row carries a Lean identifier rather than a paper title. */
+.graph-paper-link.is-lean{
+  font-family:var(--mono);
+  font-size:var(--fs-sm);
+}
 .decl-row .name{
   display:block;
   font-family:var(--mono);
@@ -492,8 +511,9 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-color:var(--line);
 }
 .nav-header label,
-.nav-flags,
-.nav-more{font-size:var(--fs-base);color:var(--muted)}
+.nav-flags{font-size:var(--fs-base);color:var(--muted)}
+/* .nav-more is a button and takes the shared button ink, not label ink. */
+.nav-more{font-size:var(--fs-base)}
 .search-wrap input,
 .filters select,
 .graph-detail input[type=search],
@@ -504,10 +524,11 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
   font-size:var(--fs-base);
 }
-.filters select{background:var(--raised)}
+/* The three result counters — this one, .trace-index-count and #graph-count —
+   are the same kind of text and share one size. */
 .nav-count{
   margin-top:var(--sp-3);
-  font-size:var(--fs-xs);
+  font-size:var(--fs-sm);
   color:var(--muted);
 }
 .content{padding:var(--sp-7) var(--sp-8) var(--sp-8)}
@@ -542,6 +563,9 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
 }
 .selected-head{padding-bottom:var(--sp-4)}
+/* trace.js reorders this head to eyebrow → title → sub → badge → prose, the
+   order the paper and graph detail panels already use. */
+.selected-head .badges{margin:var(--sp-3) 0 var(--sp-2)}
 .selected-title{
   font-family:var(--mono);
   font-size:var(--fs-2xl);
@@ -549,13 +573,29 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--ink);
 }
 .selected-sub{font-size:var(--fs-sm);color:var(--muted)}
-.tabs{border-color:var(--line)}
+/* One row, always: a wrapped second row detaches the selected tab's indicator
+   from the strip's own bottom line, so the strip scrolls sideways instead. */
+.tabs{
+  border-color:var(--line);
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+}
+/* A reserved scrollbar would sit between the selected tab's indicator and the
+   strip's own bottom line, which is the detachment this rule exists to fix;
+   the strip still scrolls by wheel, touch and tab focus. */
+.tabs::-webkit-scrollbar{height:0}
 .tabs button{
+  flex:0 0 auto;
   padding:var(--sp-4);
   border-radius:var(--r-sm) var(--r-sm) 0 0;
   font-size:var(--fs-base);
   color:var(--muted);
+  white-space:nowrap;
 }
+/* A scroll container clips an outward ring, so this one is drawn inside. */
+.tabs button:focus-visible{outline-offset:calc(-1 * var(--ring-offset))}
 .tabs button:hover{color:var(--ink)}
 .tabs button[aria-selected=true]{
   background:var(--panel);
@@ -770,10 +810,13 @@ input[type=checkbox]{accent-color:var(--accent)}
   background:var(--hl-hover);
   border-color:var(--accent);
 }
+/* The ring is inset: an outward one is painted outside the border box, which
+   is exactly the region trace.js removes with clip-path, so a trimmed box
+   would show no halo at all. */
 .paper-highlight.selected{
   border:2px solid var(--accent);
   background:var(--hl-wash);
-  box-shadow:0 0 0 3px var(--hl-ring);
+  box-shadow:inset 0 0 0 3px var(--hl-ring);
 }
 .paper-highlight.external{border-color:var(--hl-external)}
 .paper-highlight.external:hover,
@@ -784,7 +827,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 .paper-highlight.external.selected{
   border-color:var(--amber);
   background:var(--hl-external-wash);
-  box-shadow:0 0 0 3px var(--amber-line);
+  box-shadow:inset 0 0 0 3px var(--amber-line);
 }
 .paper-highlight.unmapped{
   border-style:dotted;
@@ -831,7 +874,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   font-size:var(--fs-base);
   color:var(--muted);
 }
-.trace-source-links button{font-size:var(--fs-base)}
+.trace-source-links button{font-size:var(--fs-base);text-align:left}
 .trace-source-links .trace-links-label{
   font-size:var(--fs-base);
   color:var(--cyan);
@@ -935,7 +978,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .graph-statusbar #graph-count{
   flex:1 1 28rem;
-  font-size:var(--fs-base);
+  font-size:var(--fs-sm);
   color:var(--muted);
 }
 .graph-message{
