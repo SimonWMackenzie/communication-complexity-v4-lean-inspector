@@ -1,5 +1,16 @@
 # V4 paper and Lean inspector
 
+Published through **GitHub Pages**. The public source repository is
+[SimonWMackenzie/communication-complexity-v4-lean-inspector](https://github.com/SimonWMackenzie/communication-complexity-v4-lean-inspector).
+The Pages address is shown in this repository's About section and deployment.
+
+The GitHub Actions workflow builds the retained snapshot, runs the source/data
+and graph checks, and publishes only the generated website. No ChatGPT login,
+Sites runtime, external API, or secret is needed to use or rebuild it.
+The historical .openai/hosting.json is retained for the earlier publication's
+provenance and regression checks; it is not the GitHub deployment configuration.
+Future publication changes belong in .github/workflows/pages.yml.
+
 This is the dedicated static Site source, separate from the mathematical
 proof worktree. It publishes a hash-checked snapshot of that worktree and
 adds curated, bidirectional paper correspondence. No proof or manuscript is
