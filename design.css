@@ -1457,7 +1457,14 @@ input[type=checkbox]{accent-color:var(--accent)}
 /* Everything in this view is chrome around one drawing, so every fixed band
    above and below the canvas is drawing area spent. */
 .graph-workspace{
+  /* width:100% + min-width:0 keep the workspace at the viewport width: as a flex
+     item of body its automatic minimum size would otherwise be the SVG's
+     intrinsic width (1104px at zoom 1), which widened the whole document to
+     1154px on a 375px phone and clipped the status-bar captions. The canvas is
+     the scroll container for the drawing; the page must never be. */
+  width:100%;
   max-width:1900px;
+  min-width:0;
   margin:auto;
   padding:var(--sp-5);
 }
@@ -1603,6 +1610,8 @@ input[type=checkbox]{accent-color:var(--accent)}
 .graph-layout{
   display:grid;
   grid-template-columns:minmax(0,1fr) var(--aside);
+  min-width:0;
+  max-width:100%;
   min-height:38rem;
   overflow:hidden;
   background:var(--panel);
