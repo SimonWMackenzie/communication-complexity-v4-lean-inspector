@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.pdf -text
+*.webp -text
+*.gz -text
+# Preserve byte-identical LaTeX receipts, including meaningful generated whitespace.
+*.aux -text -diff

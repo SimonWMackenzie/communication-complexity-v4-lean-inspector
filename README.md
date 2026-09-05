@@ -1,0 +1,53 @@
+# V4 paper and Lean inspector
+
+This is the dedicated static Site source, separate from the mathematical
+proof worktree. It publishes a hash-checked snapshot of that worktree and
+adds curated, bidirectional paper correspondence. No proof or manuscript is
+changed by preparing or building this Site.
+
+## Rebuild
+
+`python -B build_site.py` uses the retained `inputs/` snapshot and writes
+`dist/`. It needs only Python's standard library. Then run
+`python -B test_site.py` and `node check_scripts.cjs`.
+`npm run dev` serves the built files on loopback port 8764.
+
+The original preparation script additionally requires pypdf, pdfplumber,
+Pillow and Poppler. `prepare_snapshot.py --help` documents its inputs. It
+checks the original offline inspector hash and every source/PDF receipt
+against the proof repository before rendering pages. The input artifact
+hash is deliberately pinned; a new proof snapshot requires an explicit
+reviewed update, not silently reading a different proof.
+
+## Scope and evidence
+
+- All 75 pages of the two current papers are rendered from their exact PDFs.
+- 92 curated anchors link to existing compiled Lean declaration identifiers;
+  one further curated entry identifies contextual evidence rather than a theorem.
+- The complete compiled PDF anchor index also exposes locations without
+  curated counterparts, clearly labelled as such rather than hidden.
+- Highlights mark the location/beginning of a labelled statement or equation,
+  not the boundary of a complete proof. Physical pages and coordinates come
+  from PDF named destinations corresponding to compiled AUX labels. Numbered
+  statement headers are verified in the PDF text, correcting destinations
+  that LaTeX placed before a page break; the original destination page is retained.
+- Every mapping is mathematical interpretation, not a Lean certificate.
+  Definitions, statement correspondences, assembled proofs, external inputs,
+  and unmapped context are separately labelled.
+- Multiple Lean declarations may prove one paper result. Their local
+  hypotheses remain visible. The source and balanced-family existence
+  results remain external to Lean.
+- Runtime, materialization and ETH are outside this finite proof's scope.
+- All exact Lean source and compiler reference data remain available. The
+  graph is a source-reference graph, not kernel proof-term dependencies.
+- The original verification-report hash is retained. Public report metadata
+  omits machine-local commands and non-axiom operational log bodies.
+- Public Site deployment is not a clean reproducible proof release.
+
+`inputs/snapshot.json` identifies the proof snapshot and trace counts;
+`trace-mappings.json` is the auditable curated map. `qa/` contains local PDF
+region review images and is excluded from both Git and the published site.
+
+The design reference was the NP-hardness inspector's v2-final: prerendered
+paper pages, normalized highlight rectangles, source/definition cards and
+reverse navigation. That repository was read without modification.

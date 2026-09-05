@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>V4 finite gap and size · Lean inspector</title>
+<style>
+:root{--bg:#0c1119;--panel:#121b27;--raised:#192435;--line:#2c3b50;--ink:#e2eaf5;--muted:#a0afc4;--faint:#71829b;--accent:#a99cff;--cyan:#70d6db;--green:#8bd8a6;--amber:#f1c582;--mono:ui-monospace,"Cascadia Code",Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}button,select{color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:.45rem}button{cursor:pointer;padding:.43rem .7rem}button:hover{border-color:var(--accent);background:#222e43}button:disabled{opacity:.45;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}a{color:var(--cyan);text-underline-offset:.2em}p{margin:.5rem 0 1rem}h1,h2,h3,h4{line-height:1.25;margin:.25rem 0 .7rem}h1{font-size:1.1rem}h2{font-size:1.35rem}h3{font-size:1rem}h4{font-size:.9rem}ul,ol{padding-left:1.25rem}code,pre,.mono{font-family:var(--mono)}code{font-size:.88em}small,.small{font-size:.8rem}.muted{color:var(--muted)}.faint{color:var(--faint)}.wrap{overflow-wrap:anywhere}.eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--cyan)}.hidden,[hidden]{display:none!important}.skip-link{position:fixed;left:1rem;top:-5rem;z-index:1000;padding:.6rem;background:var(--raised)}.skip-link:focus{top:1rem}
+.topbar{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding:.9rem 1.25rem;background:#111a26;border-bottom:1px solid var(--line)}.brand{flex:1;min-width:15rem}.brand h1{margin:.15rem 0}.brand .small{color:var(--muted)}.toolbar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}.toolbar button{font-size:.78rem}.scale-controls{display:flex;align-items:center;gap:.2rem;padding:.2rem;border:1px solid var(--line);border-radius:.5rem}.scale-controls button{padding:.25rem .5rem;min-width:2rem}.scale-controls output{font-family:var(--mono);font-size:.75rem;min-width:3rem;text-align:center}.scope-strip{padding:.48rem 1.25rem;border-bottom:1px solid #57472e;background:#221e17;color:#f1d7ae;font-size:.8rem;display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}.scope-strip strong{font-weight:600}.workspace{display:grid;grid-template-columns:19.5rem minmax(0,1fr);min-height:calc(100vh - 8rem)}
+.navigation{border-right:1px solid var(--line);background:#101722;min-width:0}.nav-inner{position:sticky;top:0;max-height:100vh;display:flex;flex-direction:column}.nav-header{padding:1rem;border-bottom:1px solid var(--line);flex-shrink:0}.nav-header label{font-size:.8rem;color:var(--muted)}.search-wrap{display:flex;gap:.35rem;margin:.4rem 0 .7rem}.search-wrap input{min-width:0;width:100%;padding:.5rem .65rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.4rem;font-size:.82rem}.search-wrap button{padding:.3rem .5rem}.filters{display:flex;gap:.4rem;flex-wrap:wrap}.filters select{min-width:0;width:100%;padding:.35rem .4rem;font-size:.75rem}.nav-flags{display:flex;align-items:center;gap:.45rem;margin-top:.6rem;font-size:.73rem;color:var(--muted)}.nav-flags input{accent-color:var(--accent)}.nav-count{font-size:.73rem;color:var(--muted);margin-top:.55rem}.nav-list{overflow:auto;min-height:8rem;flex:1}.decl-row{display:block;width:100%;border:0;border-bottom:1px solid #1b2839;border-radius:0;text-align:left;background:transparent;padding:.65rem 1rem;overflow-wrap:anywhere}.decl-row:hover{background:#182336}.decl-row[aria-current=true]{background:#222842;box-shadow:inset 3px 0 var(--accent)}.decl-row .name{font-family:var(--mono);font-size:.74rem;display:block;color:var(--ink);line-height:1.4}.decl-row .meta{display:block;color:var(--faint);font-size:.66rem;margin-top:.2rem}.decl-row .kind{color:var(--cyan)}.nav-more{margin:.7rem;font-size:.76rem}.nav-empty{padding:1rem;font-size:.8rem;color:var(--muted)}
+.content{min-width:0;padding:1.4rem 1.6rem 3rem;max-width:110rem}.intro{border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:.65rem;padding:1.1rem 1.2rem;background:linear-gradient(120deg,#13232c,#141d2b);margin-bottom:1.4rem}.intro h2{font-size:1.25rem;max-width:55rem}.intro .intro-copy{font-size:.94rem;max-width:70rem}.intro details{font-size:.83rem;margin-top:.8rem;border-top:1px solid var(--line);padding-top:.65rem}.intro summary{cursor:pointer;color:var(--cyan)}.intro-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}.intro-actions button{font-size:.75rem}.stats{display:flex;gap:1.2rem;flex-wrap:wrap;margin:.7rem 0 0}.stat{font-size:.71rem;color:var(--muted)}.stat b{color:var(--ink);font-size:.95rem;font-family:var(--mono);margin-right:.25rem}.selected-head{padding-bottom:.9rem}.selected-title{font-family:var(--mono);font-size:1.06rem;overflow-wrap:anywhere;line-height:1.45}.selected-sub{font-size:.76rem;color:var(--muted);overflow-wrap:anywhere}.badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.55rem}.badge{font-size:.67rem;border:1px solid var(--line);padding:.16rem .5rem;border-radius:1rem;color:var(--muted);background:var(--panel)}.badge.audit{color:var(--green);border-color:#42604a;background:#17271f}.badge.external{color:var(--amber);border-color:#655031;background:#282218}.selected-explanation{font-size:.87rem;max-width:75rem;margin:.65rem 0 0}.tabs{display:flex;gap:.15rem;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:1rem}.tabs button{border-radius:.4rem .4rem 0 0;border-color:transparent;background:transparent;font-size:.8rem;padding:.65rem .8rem;color:var(--muted)}.tabs button[aria-selected=true]{color:var(--ink);background:var(--raised);border:1px solid var(--line);border-bottom:2px solid var(--accent)}.tab-panel{min-height:20rem}.panel-note{font-size:.81rem;color:var(--muted);max-width:76rem}.notice{border:1px solid #655031;border-left:3px solid var(--amber);border-radius:.45rem;background:#231f18;padding:.8rem 1rem;font-size:.84rem;margin:.8rem 0 1rem}.notice.neutral{border-color:var(--line);border-left-color:var(--cyan);background:var(--panel)}.section-card{border:1px solid var(--line);border-radius:.55rem;background:var(--panel);padding:1rem;margin:.8rem 0}.section-card h3{color:var(--cyan)}.code-toolbar{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:space-between;margin:.7rem 0 .4rem}.code-toolbar .actions{display:flex;gap:.35rem;flex-wrap:wrap}.code-toolbar button{font-size:.72rem}.code-label{font-family:var(--mono);font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}.codeblock{margin:0;padding:.85rem 1rem;border:1px solid var(--line);border-radius:.5rem;background:#0a1018;color:#d4dfed;white-space:pre;overflow:auto;font-size:.76rem;line-height:1.65;tab-size:2;max-height:65vh}.codeblock.wrap-code{white-space:pre-wrap;overflow-wrap:anywhere}.codeblock .ref{padding:0;margin:0;border:0;border-radius:2px;background:transparent;color:#9bc9ff;font:inherit;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#597cab;text-underline-offset:.22em;vertical-align:baseline}.codeblock .ref:hover{color:#e6f2ff;background:#1e3550}.codeblock .syntax{padding:0;margin:0;border:0;background:transparent;font:inherit;color:#cab5fc;border-radius:2px;vertical-align:baseline}.codeblock .syntax:hover{background:#2c2343}.codeblock .comment{color:#83938b}.codeblock .literal{color:#efbd91}.codeblock .num{color:#edc381}.inline-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin:.8rem 0}.inline-actions button{font-size:.76rem}.data-list{margin:.5rem 0;display:grid;grid-template-columns:minmax(8rem,14rem) minmax(0,1fr);font-size:.8rem;gap:.45rem .9rem}.data-list dt{color:var(--muted);overflow-wrap:anywhere}.data-list dd{margin:0;min-width:0;overflow-wrap:anywhere}.data-list .data-list{grid-template-columns:minmax(6rem,10rem) minmax(0,1fr)}.value-list{margin:.2rem 0;padding-left:1.2rem}.value-list li{margin:.3rem 0;overflow-wrap:anywhere}.empty{padding:1rem;border:1px dashed var(--line);border-radius:.45rem;color:var(--muted);font-size:.83rem}.dependency-columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.dep-list{list-style:none;padding:0;margin:0}.dep-list li{padding:.35rem 0;border-bottom:1px solid #243046}.dep-link{border:0;padding:.2rem .1rem;background:transparent;color:var(--cyan);font-family:var(--mono);font-size:.74rem;text-align:left;overflow-wrap:anywhere}.dep-link:hover{background:transparent;text-decoration:underline}.dep-list .small{color:var(--faint);display:block;font-size:.66rem}.graph-controls{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.76rem;margin:.75rem 0}.graph-controls select{font-size:.76rem;padding:.25rem}.graph-frame{width:100%;overflow:auto;background:#0d1520;border:1px solid var(--line);border-radius:.55rem;margin:.5rem 0 1rem}.graph-frame svg{display:block;min-width:760px;width:100%;height:auto}.graph-edge{stroke:#657297;stroke-width:1.3;fill:none}.graph-node{cursor:pointer}.graph-node rect{fill:#18283a;stroke:#527293;stroke-width:1.2;rx:7}.graph-node:hover rect,.graph-node:focus rect{stroke:var(--cyan);fill:#213952}.graph-node.root rect{fill:#292440;stroke:var(--accent);stroke-width:1.8}.graph-node text{fill:var(--ink);font-family:var(--mono);font-size:10px;pointer-events:none}.graph-node .sub{fill:var(--muted);font-size:9px}.graph-heading{fill:var(--muted);font-family:var(--sans);font-size:11px}.paper-card{border:1px solid var(--line);border-radius:.55rem;background:var(--panel);padding:1rem;margin:.75rem 0}.paper-card h3{margin:0 0 .5rem}.paper-card .hash{font-family:var(--mono);font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}.paper-card .paper-description{font-size:.85rem}.footer-note{border-top:1px solid var(--line);margin-top:2rem;padding-top:.9rem;font-size:.73rem;color:var(--muted)}
+#cards{position:fixed;inset:0;pointer-events:none;z-index:50}.definition-card{position:absolute;width:min(35rem,calc(100vw - 1rem));max-height:75vh;display:flex;flex-direction:column;background:#111c29;border:1px solid #6b6d9c;border-radius:.65rem;box-shadow:0 18px 70px #0009;pointer-events:auto;resize:both;overflow:hidden;min-width:250px;min-height:160px}.card-header{display:flex;gap:.5rem;align-items:center;padding:.55rem .7rem;background:#252943;border-bottom:1px solid #525573;cursor:move;touch-action:none;flex-shrink:0}.card-header h2{font-family:var(--mono);font-size:.76rem;line-height:1.35;overflow-wrap:anywhere;flex:1;margin:0;pointer-events:none}.card-header button{font-size:1rem;line-height:1;padding:.2rem .4rem;background:transparent;border:0}.card-body{padding:.8rem 1rem;overflow:auto;font-size:.83rem;min-height:0}.card-body .codeblock{font-size:.71rem;max-height:26rem}.card-body .data-list{font-size:.75rem;display:block}.card-body .data-list dt{margin:.45rem 0 .1rem}.card-body p{margin:.4rem 0 .7rem}.card-controls{display:flex;gap:.35rem;flex-wrap:wrap;padding:.6rem .8rem;border-top:1px solid var(--line);flex-shrink:0}.card-controls button{font-size:.73rem}#status-message{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);padding:.65rem 1rem;background:#283450;border:1px solid var(--accent);border-radius:.5rem;z-index:1000;font-size:.82rem;max-width:90vw;box-shadow:0 4px 30px #0008}#fatal{margin:2rem;max-width:65rem;padding:1rem;border:1px solid var(--amber);border-radius:.5rem;background:#261f17}
+@media(min-width:1500px){.workspace{grid-template-columns:22rem minmax(0,1fr)}.content{padding-left:2rem;padding-right:2rem}}
+@media(max-width:960px){.workspace{grid-template-columns:16.5rem minmax(0,1fr)}.content{padding:1rem}.dependency-columns{grid-template-columns:1fr}.tabs button{padding:.55rem .55rem;font-size:.76rem}.intro{padding:.9rem}.data-list{grid-template-columns:minmax(6rem,10rem) minmax(0,1fr)}}
+@media(max-width:700px){.topbar{padding:.75rem;gap:.6rem}.topbar .toolbar{width:100%}.brand{min-width:0}.brand h1{font-size:1rem}.scope-strip{padding:.55rem .75rem}.workspace{display:block}.navigation{border-right:0;border-bottom:1px solid var(--line)}.nav-inner{position:static;max-height:none}.nav-header{padding:.75rem}.nav-list{max-height:35vh;min-height:0}.navigation.mobile-collapsed .nav-list,.navigation.mobile-collapsed .nav-more{display:none}.filters{flex-wrap:nowrap}.filters select:first-child{width:65%}.filters select:last-child{width:35%}.nav-header label{font-size:.78rem}.content{padding:1rem .75rem 2rem}.intro{margin-bottom:1.1rem}.intro h2{font-size:1.1rem}.intro .intro-copy{font-size:.88rem}.selected-title{font-size:.93rem}.tabs{gap:0}.tabs button{font-size:.72rem;padding:.55rem .5rem}.codeblock{font-size:.73rem;padding:.6rem;max-height:65vh}.data-list{display:block}.data-list dt{margin:.6rem 0 .15rem}.data-list dd{margin-left:0}.definition-card{max-height:82vh;resize:none;min-width:0}.graph-frame svg{min-width:730px}.stats{gap:.7rem}.stat{font-size:.68rem}.scope-strip{font-size:.75rem}.toolbar .mobile-toggle{display:block}}
+@media(min-width:701px){.toolbar .mobile-toggle{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{.navigation,.toolbar,.tabs,#cards,.intro-actions,.code-toolbar .actions,.graph-controls,.footer-note{display:none!important}.workspace{display:block}.content{padding:0;max-width:none}.topbar{padding:0 0 .5rem}.codeblock{max-height:none;overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere}body{background:white;color:black}.intro,.section-card,.notice,.codeblock{background:white;color:black;border-color:#888}.selected-title{color:black}.muted,.selected-sub,.panel-note{color:#444}.tab-panel{min-height:0}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to theorem inspector</a>
+<header class="topbar">
+  <div class="brand"><div class="eyebrow">Communication complexity / V4</div><h1>Finite gap and size · Lean inspector</h1><div class="small">Read the result. Inspect the exact source. Follow its references.</div></div>
+  <div class="toolbar" aria-label="Inspector controls">
+    <button id="show-root" type="button">Main theorem</button>
+    <button id="show-provenance" type="button">Verification record</button>
+    <button id="show-help" type="button" aria-label="How to use the inspector">Help</button>
+    <div class="scale-controls" aria-label="Text size"><button id="scale-down" aria-label="Decrease text size" type="button">−</button><output id="scale-value" aria-live="polite">100%</output><button id="scale-up" aria-label="Increase text size" type="button">+</button><button id="scale-reset" aria-label="Reset text size" type="button">↺</button></div>
+    <button class="mobile-toggle" id="toggle-nav" type="button" aria-expanded="true" aria-controls="declaration-navigation">Hide navigation</button>
+  </div>
+</header>
+<div class="scope-strip"><strong>Finite theorem, conditional on its stated external inputs.</strong><span>No runtime, algorithmic effectivity, or ETH consequence is claimed here.</span></div>
+<div id="fatal" role="alert" hidden></div>
+<div class="workspace" id="workspace">
+  <nav class="navigation" id="declaration-navigation" aria-label="Lean declarations"><div class="nav-inner">
+    <div class="nav-header">
+      <label for="search">Find a declaration <span class="faint">(press /)</span></label>
+      <div class="search-wrap"><input type="search" id="search" autocomplete="off" spellcheck="false" placeholder="Name, module, explanation…"><button type="button" id="clear-search" aria-label="Clear search">×</button></div>
+      <div class="filters"><select id="module-filter" aria-label="Filter by module"><option value="">All indexed modules</option></select><select id="kind-filter" aria-label="Filter by declaration kind"><option value="">All kinds</option></select></div>
+      <label class="nav-flags"><input type="checkbox" id="include-libraries"> Include library-reference cards</label>
+      <div class="nav-count" id="nav-count" role="status" aria-live="polite"></div>
+    </div>
+    <div id="nav-list" class="nav-list"></div><button id="nav-more" class="nav-more" type="button" hidden>Show more results</button>
+  </div></nav>
+  <main id="main-content" class="content" tabindex="-1">
+    <section class="intro" aria-labelledby="intro-title"><div class="eyebrow">The result in plain English</div><h2 id="intro-title">A communication gap, with a size bound on the same matrices</h2><div id="intro-copy" class="intro-copy"></div><div class="stats" id="stats"></div><div class="intro-actions"><button id="intro-root" type="button">Inspect the theorem</button><button id="intro-assumptions" type="button">What is assumed?</button><button id="intro-papers" type="button">Read the papers</button></div><details><summary>What this inspector establishes—and what it does not</summary><div id="trust-boundary"></div></details></section>
+    <section class="selected-head" aria-labelledby="selected-title"><div id="selected-badges" class="badges"></div><h2 id="selected-title" class="selected-title"></h2><div id="selected-sub" class="selected-sub"></div><div id="selected-explanation" class="selected-explanation"></div></section>
+    <div class="tabs" role="tablist" aria-label="Declaration details"><button type="button" role="tab" id="tab-statement" aria-controls="panel-statement" data-tab="statement" aria-selected="true">Statement</button><button type="button" role="tab" id="tab-source" aria-controls="panel-source" data-tab="source" aria-selected="false" tabindex="-1">Source</button><button type="button" role="tab" id="tab-dependencies" aria-controls="panel-dependencies" data-tab="dependencies" aria-selected="false" tabindex="-1">Dependencies</button><button type="button" role="tab" id="tab-assumptions" aria-controls="panel-assumptions" data-tab="assumptions" aria-selected="false" tabindex="-1">Assumptions</button><button type="button" role="tab" id="tab-provenance" aria-controls="panel-provenance" data-tab="provenance" aria-selected="false" tabindex="-1">Provenance</button><button type="button" role="tab" id="tab-papers" aria-controls="panel-papers" data-tab="papers" aria-selected="false" tabindex="-1">Papers</button></div>
+    <section id="panel-statement" class="tab-panel" role="tabpanel" aria-labelledby="tab-statement"></section>
+    <section id="panel-source" class="tab-panel" role="tabpanel" aria-labelledby="tab-source" hidden></section>
+    <section id="panel-dependencies" class="tab-panel" role="tabpanel" aria-labelledby="tab-dependencies" hidden></section>
+    <section id="panel-assumptions" class="tab-panel" role="tabpanel" aria-labelledby="tab-assumptions" hidden></section>
+    <section id="panel-provenance" class="tab-panel" role="tabpanel" aria-labelledby="tab-provenance" hidden></section>
+    <section id="panel-papers" class="tab-panel" role="tabpanel" aria-labelledby="tab-papers" hidden></section>
+    <footer class="footer-note">This is a self-contained, offline reading aid. The Lean source and verification receipts—not the English explanations or this graph—determine the theorem. Identifiers link through compiler-recorded source references. No network request is needed to use the inspector.</footer>
+  </main>
+</div>
+<div id="cards" aria-label="Open definition cards"></div><div id="status-message" role="status" aria-live="polite" hidden></div>
+<script id="inspector-data" type="application/json">__INSPECTOR_DATA__</script>
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; };
+  const button = (text, action, cls) => { const node = el("button", cls, text); node.type = "button"; node.addEventListener("click", action); return node; };
+  let DATA;
+  try { DATA = JSON.parse($("inspector-data").textContent); if (!Array.isArray(DATA.declarations) || !DATA.declarations.length) throw new Error("The payload contains no declaration index."); }
+  catch (error) { $("workspace").hidden = true; $("fatal").hidden = false; $("fatal").textContent = "This inspector has not been built, or its embedded data is invalid. Rebuild it with the repository's inspector builder. Details: " + error.message; return; }
+  const declarations = DATA.declarations, meta = DATA.meta || {}, modules = DATA.modules || [];
+  const byId = new Map(declarations.map(d => [d.id || d.name, d]));
+  for (const d of declarations) { if (!d.id) d.id = d.name; if (!d.name) d.name = d.id; if (!byId.has(d.name)) byId.set(d.name,d); }
+  const moduleByName = new Map(modules.map(m => [m.name,m]));
+  const rootId = typeof DATA.root === "string" ? DATA.root : DATA.root && (DATA.root.id || DATA.root.name);
+  const root = byId.get(rootId) || declarations.find(d => d.status === "root-audited") || declarations[0];
+  let selected = root, currentTab = "statement", navLimit = 160, graphLimit = 12, cardZ = 60, cardCounter = 0, toastTimer;
+  const renderedTabs = new Set(), cards = [];
+  const textValue = value => typeof value === "string" ? value : value == null ? "" : JSON.stringify(value);
+  const shortName = name => String(name || "").split(".").pop();
+  const unique = xs => [...new Set((xs || []).filter(Boolean))];
+  const dependencyIds = d => unique((d.dependencies || []).map(v => typeof v === "string" ? v : v.target || v.id));
+  const dependentIds = d => unique((d.dependents || []).map(v => typeof v === "string" ? v : v.source || v.id));
+  const isLibrary = d => d.status === "library-reference";
+  const isTerminal = d => isLibrary(d) || d.status === "project-generated-reference";
+  const displayKind = d => d.kind || (isLibrary(d) ? "library reference" : "declaration");
+  const summary = DATA.summary || {};
+  const summaryText = typeof summary === "string" ? summary : summary.text || summary.plainEnglish || summary.description || summary.statement;
+  const scopeText = "For each fixed positive gap k, sufficiently large valid formulas give a nonempty family of matrices. If the formula is satisfiable, some matrix has a low communication cost. If it is unsatisfiable, every matrix costs at least k more bits. The size bound applies to these same matrices.";
+  const edgeMeaning = meta.edgeMeaning || "Arrows are compiler-recorded references in declaration source. They are not a complete dependency graph extracted from proof terms, and they do not certify the English proof outline.";
+  const syntaxDefaults = {
+    theorem:"Declares a proposition together with a proof. Lean checks that the proof has the stated type.", lemma:"Like theorem: a named proposition with a checked proof.",
+    def:"Defines a named object or function.", abbrev:"Defines an abbreviation that Lean can unfold readily.", opaque:"Defines a constant while keeping its implementation opaque during reduction.",
+    structure:"Defines a record type. A value supplies its fields, which may include mathematical data and proofs.", class:"A structure used by Lean's typeclass inference to find suitable instances.",
+    instance:"Registers a value for typeclass inference.", inductive:"Defines a type by constructors, with an associated induction principle.",
+    axiom:"Introduces a proposition or constant without supplying a proof. An axiom's presence must be distinguished from a theorem with explicit hypotheses.",
+    by:"Starts a tactic proof: subsequent commands construct a proof term checked by Lean.", intro:"Introduces the next universally quantified variable or implication hypothesis.",
+    exact:"Finishes the current goal using a term with exactly the required type.", apply:"Uses a theorem or function to reduce the goal to its premises.",
+    refine:"Supplies a partially completed proof term; holes become new goals.", simp:"Simplifies using Lean's registered simplification rules and any additional lemmas provided.",
+    simpa:"Simplifies the goal and supplied proof, then closes the goal when they match.", have:"Introduces an intermediate assertion, along with its proof.",
+    let:"Introduces a local definition.", fun:"Introduces an anonymous function. For propositions, it can construct an implication proof.",
+    match:"Splits into cases according to the constructors of a value.", with:"Introduces cases in a match expression, or arguments to certain tactics.",
+    where:"Introduces local definitions or structure fields associated with the preceding declaration.",
+    forall:"Universal quantification: the assertion holds for every object of the stated type.",
+    "∀":"For every. The variable and its type follow this symbol.", "∃":"There exists. The proposition supplies an object and a proof of its stated property.",
+    "→":"Between propositions: implies. Between types: the type of functions from the first type to the second.", "↔":"If and only if: both directions of implication.",
+    "∧":"Logical and: both propositions must hold.", "∨":"Logical or: at least one proposition holds.", "¬":"Logical not: the proposition implies False.",
+    ":=":"Gives the value of a definition or the proof term of a theorem.", ":":"Asserts a term's type. For a theorem, the type is the proposition being proved.",
+    "=>":"Separates a function's arguments or a match case from its body.", "⟨":"Starts constructor notation, commonly used for a pair, conjunction, or existential witness.",
+    "⟩":"Ends constructor notation.", "≤":"Less than or equal, with the meaning determined by the type involved.", "≥":"Greater than or equal, with the meaning determined by the type involved.",
+    "Nat":"The natural numbers, beginning at zero.", "ℕ":"The natural numbers, beginning at zero.", "ℝ":"The real numbers.", "Bool":"The two-element Boolean type, with values true and false.",
+    "Prop":"The type of logical propositions.", "Type":"A universe of types, such as natural numbers or matrix row labels.", "Nonempty":"Asserts that a type has at least one element, without choosing a specific element in the statement.",
+    "Fintype":"A typeclass recording that a type has finitely many elements, together with a finite enumeration.",
+    "Finset":"A finite set, with no repeated elements.", "Fin":"Fin n is the type of natural numbers strictly below n.", "Set":"A set of elements of a type, represented by a membership predicate.",
+    "Classical":"Lean's namespace for classical logical tools. Actual axiom dependencies are reported separately.",
+    "sorry":"An unfinished proof placeholder. Its use introduces sorryAx, which is not an accepted axiom for this project's checked root."
+  };
+  const syntax = {...syntaxDefaults, ...(DATA.syntax || {})};
+  function toast(message) { clearTimeout(toastTimer); $("status-message").textContent = message; $("status-message").hidden = false; toastTimer = setTimeout(() => { $("status-message").hidden = true; },3500); }
+  function readableKey(key) { return key.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]/g," "); }
+  function renderValue(value, host) {
+    if (value == null) { host.append(el("span","muted","Not recorded")); return; }
+    if (typeof value !== "object") { host.append(el(typeof value === "string" && value.includes("\n") ? "pre" : "span",typeof value === "string" && value.includes("\n") ? "codeblock wrap-code" : "wrap",String(value))); return; }
+    if (Array.isArray(value)) { if (!value.length) { host.append(el("span","muted","None recorded")); return; } const ul = el("ul","value-list"); for (const item of value) { const li = el("li"); renderValue(item,li); ul.append(li); } host.append(ul); return; }
+    const dl = el("dl","data-list"); for (const [key,val] of Object.entries(value)) { const dt = el("dt",null,readableKey(key)); const dd = el("dd"); renderValue(val,dd); dl.append(dt,dd); } host.append(dl);
+  }
+  function note(host,text,neutral=false) { const p = el("div","notice" + (neutral ? " neutral" : "")); renderValue(text,p); host.append(p); return p; }
+  function section(host,title) { const card = el("section","section-card"); card.append(el("h3",null,title)); host.append(card); return card; }
+  function download(name,contents,type="text/plain;charset=utf-8") { const url = URL.createObjectURL(new Blob([contents],{type})); const a = el("a"); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),10000); }
+  async function copy(text) { try { if (!navigator.clipboard || !window.isSecureContext) throw new Error("clipboard unavailable"); await navigator.clipboard.writeText(text); toast("Copied exact source."); } catch (_) { const area = el("textarea"); area.value = text; area.style.position = "fixed"; area.style.left = "-9999px"; document.body.append(area); area.select(); const ok = document.execCommand("copy"); area.remove(); toast(ok ? "Copied exact source." : "Clipboard unavailable. Use Download source, or select and copy the code."); } }
+  function declarationFromLocation() { const hash = location.hash.slice(1); if (!hash || hash === "main-content") return null; try { const p = new URLSearchParams(hash); return byId.get(p.get("decl")) || byId.get(decodeURIComponent(hash)); } catch (_) { return null; } }
+  function selectDeclaration(id, tab, updateHash=true) {
+    const d = byId.get(id); if (!d) { openUnknown(id); return; }
+    selected = d; currentTab = tab || currentTab; renderedTabs.clear();
+    $("selected-title").textContent = d.name;
+    $("selected-sub").textContent = [d.module, d.file && (d.file + (d.line ? ":" + d.line + (d.endLine && d.endLine !== d.line ? "–" + d.endLine : "") : ""))].filter(Boolean).join(" · ") || "Library reference; source is not embedded in this index.";
+    $("selected-badges").replaceChildren();
+    $("selected-badges").append(el("span","badge",displayKind(d)));
+    $("selected-badges").append(el("span","badge" + (d.status === "root-audited" ? " audit" : isTerminal(d) ? " external" : ""), d.status === "root-audited" ? "Root axiom audit recorded · conditional theorem" : isTerminal(d) ? "Reference card · standalone body not embedded" : "Indexed source declaration"));
+    if (d.id === root.id) $("selected-badges").append(el("span","badge","Public finite theorem"));
+    $("selected-explanation").replaceChildren(); if (d.plainEnglish) renderValue(d.plainEnglish,$("selected-explanation"));
+    for (const row of $("nav-list").querySelectorAll("button[data-id]")) row.setAttribute("aria-current",String(row.dataset.id === d.id));
+    if (updateHash) { try { history.replaceState(null,"","#" + new URLSearchParams({decl:d.id}).toString()); } catch (_) { /* Some offline hosts do not permit History API changes. */ } }
+    setTab(currentTab);
+  }
+  function setTab(name) {
+    if (!["statement","source","dependencies","assumptions","provenance","papers"].includes(name)) name = "statement";
+    currentTab = name;
+    for (const tab of document.querySelectorAll("[data-tab]")) { const active = tab.dataset.tab === name; tab.setAttribute("aria-selected",String(active)); tab.tabIndex = active ? 0 : -1; $("panel-" + tab.dataset.tab).hidden = !active; }
+    if (!renderedTabs.has(name)) { const host = $("panel-" + name); host.replaceChildren(); ({statement:renderStatement,source:renderSource,dependencies:renderDependencies,assumptions:renderAssumptions,provenance:renderProvenance,papers:renderPapers})[name](selected,host); renderedTabs.add(name); }
+  }
+  function sourceOffsets(d, code) {
+    const source = d.source || ""; const exactPrefix = source.startsWith(code);
+    if (!exactPrefix && code !== source) return [];
+    const lines = [0]; for (let i=0;i<source.length;i++) if (source[i] === "\n") lines.push(i+1);
+    const startLine = Number(d.sourceStartLine || d.line || 1); const startColumn = Number(d.sourceStartColumn || 0);
+    const offsetAt = (line,column) => { const n = Number(line) - startLine; if (n < 0 || n >= lines.length) return -1; return lines[n] + Number(column || 0) - (n === 0 ? startColumn : 0); };
+    const refs = [];
+    for (const r of d.referenceOccurrences || []) {
+      const start = Number.isInteger(r.offset) ? r.offset : offsetAt(r.line,r.column);
+      const end = Number.isInteger(r.endOffset) ? r.endOffset : offsetAt(r.endLine == null ? r.line : r.endLine,r.endColumn);
+      const target = r.target || r.id;
+      if (target && start >= 0 && end > start && end <= code.length) refs.push({start,end,target});
+    }
+    refs.sort((a,b) => a.start-b.start || a.end-b.end || a.target.localeCompare(b.target));
+    const out = []; let covered = -1;
+    for (const r of refs) { if (r.start < covered) continue; out.push(r); covered = r.end; }
+    return out;
+  }
+  function addLexical(text, host) {
+    // Lexical highlighting never creates a declaration reference. Only compiler
+    // reference ranges do that. Comments and string literals remain inert.
+    const token = /\/-|--|"|[\p{L}_][\p{L}\p{N}_'.]*|:=|=>|[∀∃→↔∧∨¬⟨⟩≤≥ℕℝ:]|\d+/gu;
+    let cursor = 0, match;
+    while ((match = token.exec(text))) {
+      const start = match.index, value = match[0];
+      if (start > cursor) host.append(document.createTextNode(text.slice(cursor,start)));
+      if (value === "--") { let end = text.indexOf("\n",token.lastIndex); if (end < 0) end = text.length; host.append(el("span","comment",text.slice(start,end))); token.lastIndex = cursor = end; continue; }
+      if (value === "/-") { let depth=1,end=token.lastIndex; while (end < text.length && depth) { if (text.slice(end,end+2)==="/-") {depth++;end+=2;} else if(text.slice(end,end+2)==="-/") {depth--;end+=2;} else end++; } host.append(el("span","comment",text.slice(start,end))); token.lastIndex=cursor=end; continue; }
+      if (value === '"') { let end=token.lastIndex; while(end<text.length) { if(text[end]==="\\") {end+=2;continue;} if(text[end++]==='"') break; } end=Math.min(end,text.length); host.append(el("span","literal",text.slice(start,end))); token.lastIndex=cursor=end; continue; }
+      if (Object.prototype.hasOwnProperty.call(syntax,value)) { const b=button(value,()=>openSyntax(value),"syntax"); b.title="Explain Lean syntax: " + value; b.setAttribute("aria-label","Explain " + value); host.append(b); }
+      else if (/^\d+$/.test(value)) host.append(el("span","num",value)); else host.append(document.createTextNode(value));
+      cursor=token.lastIndex;
+    }
+    if(cursor<text.length) host.append(document.createTextNode(text.slice(cursor)));
+  }
+  function renderCode(code, d, host, label, allowReferences=true) {
+    const exactCode = String(code || ""); const toolbar = el("div","code-toolbar"); toolbar.append(el("span","code-label",label));
+    const actions=el("div","actions"); const pre=el("pre","codeblock"); const content=el("code"); pre.append(content);
+    actions.append(button("Wrap lines",e=>{const on=pre.classList.toggle("wrap-code");e.currentTarget.textContent=on?"Unwrap lines":"Wrap lines";e.currentTarget.setAttribute("aria-pressed",String(on));}));
+    actions.append(button("Copy",()=>copy(exactCode)),button("Download",()=>download(shortName(d.name || d.id || "source") + ".lean",exactCode)));
+    toolbar.append(actions); host.append(toolbar,pre);
+    const refs=allowReferences?sourceOffsets(d,exactCode):[]; let cursor=0;
+    for(const r of refs) { if(r.start>cursor) addLexical(exactCode.slice(cursor,r.start),content); const b=button(exactCode.slice(r.start,r.end),()=>openDeclarationCard(r.target),"ref"); b.dataset.target=r.target; b.title="Compiler reference: " + r.target; b.setAttribute("aria-label","Inspect " + r.target); content.append(b); cursor=r.end; }
+    if(cursor<exactCode.length) addLexical(exactCode.slice(cursor),content);
+    return pre;
+  }
+  function renderStatement(d,host) {
+    host.append(el("p","panel-note","The Lean source statement below is an exact source excerpt, not a reprinted elaborated type. Section variables and local notation may be declared outside this excerpt; consult the complete module under Source. A theorem's hypotheses are part of what it says. Underlined identifiers use compiler-resolved references; purple syntax opens an explanation."));
+    if (d.contextDeclaration) { const context=el("div","inline-actions");context.append(button("Open enclosing declaration",()=>selectDeclaration(d.contextDeclaration,"source")));host.append(context);note(host,"This is a generated name or structure field. Its recorded source lies in the enclosing declaration; it is not a separately written top-level theorem.",true); }
+    if (isTerminal(d) || !(d.statement || d.source)) { note(host,"This name is referenced by the compiled source, but its standalone definition body is not embedded. No source or theorem statement is invented for this card.",true); return; }
+    if (d.how) { const how=section(host,"How this declaration is used"); renderValue(d.how,how); }
+    renderCode(d.statement || d.source,d,host,"Lean source statement · " + (d.file || d.module || "embedded source") + (d.line ? ":" + d.line : ""));
+    const actions=el("div","inline-actions");actions.append(button("Show complete declaration and proof",()=>setTab("source")),button("Follow direct references",()=>setTab("dependencies")));host.append(actions);
+    if (d.id===root.id) note(host,"A proof of this implication does not itself construct or prove the external input theorem. See Assumptions for the exact boundary and the recorded human proof or source provenance.");
+  }
+  function renderSource(d,host) {
+    host.append(el("p","panel-note","Complete embedded source is available here without truncation. A source download is a reading aid, not a standalone build: preserve its module imports and the repository's pinned dependencies to replay Lean."));
+    if (d.contextDeclaration) { const actions=el("div","inline-actions");actions.append(button("Open enclosing declaration",()=>selectDeclaration(d.contextDeclaration,"source")));host.append(actions); }
+    if (d.source) renderCode(d.source,d,host,(d.contextDeclaration ? "Complete recorded field/source span · " : "Complete declaration · ") + (d.file || d.module || "source") + (d.sourceStartLine || d.line ? ":" + (d.sourceStartLine || d.line) : ""));
+    else note(host,"This is a library-reference card. The definition body was not extracted into this artifact.",true);
+    const m=moduleByName.get(d.module);
+    if(m && typeof m.source==="string") {
+      const details=el("details","section-card");details.append(el("summary",null,"Complete module source (including imports and surrounding declarations)"));
+      let loaded=false;details.addEventListener("toggle",()=>{if(details.open&&!loaded){loaded=true;renderCode(m.source,{name:m.name,source:m.source,line:1},details,m.file || m.name,false);details.append(el("p","panel-note","Module view has syntax explanations only. For compiler-linked identifiers, use the individual declaration view."));}});
+      host.append(details);
+    }
+  }
+  function depList(ids,host,title) {
+    const card=section(host,title + " (" + ids.length.toLocaleString() + ")");if(!ids.length){card.append(el("p","panel-note","No references recorded in this direction in the extracted index."));return;}
+    const ul=el("ul","dep-list");for(const id of ids){const d=byId.get(id),li=el("li");const b=button(id,()=>selectDeclaration(id,"statement"),"dep-link");li.append(b);li.append(el("span","small",d?[displayKind(d),d.module || "",isLibrary(d)?"body not embedded":""].filter(Boolean).join(" · "):"Referenced name; no source body embedded"));ul.append(li);}card.append(ul);
+  }
+  function renderDependencies(d,host) {
+    host.append(el("p","panel-note",edgeMeaning));
+    const deps=dependencyIds(d), callers=dependentIds(d);
+    const controls=el("div","graph-controls");controls.append(el("span",null,"Visible nodes per side:"));const count=el("select");count.setAttribute("aria-label","Maximum graph nodes per side");for(const n of [6,12,24,0]){const opt=el("option",null,n?String(n):"All direct references");opt.value=String(n);opt.selected=n===graphLimit;count.append(opt);}controls.append(count,button("Main theorem neighborhood",()=>selectDeclaration(root.id,"dependencies")));
+    const roots=unique((DATA.roots || []).map(r=>typeof r==="string"?r:r.id||r.name));for(const id of roots.filter(id=>id!==root.id)){if(byId.has(id))controls.append(button("Compare earlier root",()=>selectDeclaration(id,"dependencies")));}
+    const explanation=el("p","panel-note"),frame=el("div","graph-frame");host.append(controls,explanation,frame);
+    const draw=()=>{frame.replaceChildren();const left=graphLimit?callers.slice(0,graphLimit):callers,right=graphLimit?deps.slice(0,graphLimit):deps;explanation.textContent="Arrows point from a declaration to a name it references. Showing " + left.length + " of " + callers.length + " incoming and " + right.length + " of " + deps.length + " outgoing references. The complete lists remain below.";drawGraph(d,left,right,frame);};count.addEventListener("change",()=>{graphLimit=Number(count.value);draw();});draw();
+    const lists=el("div","dependency-columns");depList(deps,lists,"Referenced by this declaration");depList(callers,lists,"Declarations that reference this one");host.append(lists);
+  }
+  function drawGraph(d,left,right,host) {
+    const ns="http://www.w3.org/2000/svg";const svgEl=(tag,attrs)=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs||{}))n.setAttribute(k,String(v));return n;};
+    const count=Math.max(left.length,right.length,1),height=62+count*60,width=1060,boxW=290,boxH=44,centerY=40+(height-62)/2-boxH/2;
+    const svg=svgEl("svg",{viewBox:`0 0 ${width} ${height}`,role:"img","aria-label":"Direct compiler-source references around " + d.name});
+    const title=svgEl("title");title.textContent="Direct source-reference neighborhood. Accessible complete lists follow this graph.";svg.append(title);
+    const defs=svgEl("defs"),marker=svgEl("marker",{id:"arrow-" + (++cardCounter),viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:6,markerHeight:6,orient:"auto-start-reverse"}),arrow=svgEl("path",{d:"M 0 0 L 10 5 L 0 10 z",fill:"#8a97ba"});marker.append(arrow);defs.append(marker);svg.append(defs);
+    const heading=(x,text)=>{const t=svgEl("text",{x,y:22,class:"graph-heading"});t.textContent=text;svg.append(t);};heading(16,"Declarations that refer to this one");heading(386,"Selected declaration");heading(755,"Names referenced by this declaration");
+    const node=(id,x,y,isRoot=false)=>{const obj=byId.get(id),g=svgEl("g",{class:"graph-node"+(isRoot?" root":""),transform:`translate(${x},${y})`,tabindex:0,role:"button","aria-label":"Inspect " + id});const full=svgEl("title");full.textContent=id;g.append(full,svgEl("rect",{width:boxW,height:boxH}));const a=svgEl("text",{x:10,y:17});const name=shortName(id);a.textContent=name.length>39?name.slice(0,36)+"…":name;const b=svgEl("text",{x:10,y:33,class:"sub"});const subtitle=obj?displayKind(obj):"external reference";b.textContent=subtitle;g.append(a,b);g.addEventListener("click",()=>selectDeclaration(id,"dependencies"));g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();selectDeclaration(id,"dependencies");}});svg.append(g);};
+    const edge=(x1,y1,x2,y2)=>svg.append(svgEl("path",{class:"graph-edge",d:`M ${x1} ${y1} C ${x1+25} ${y1}, ${x2-25} ${y2}, ${x2} ${y2}`,"marker-end":"url(#"+marker.id+")"}));
+    left.forEach((id,i)=>edge(16+boxW,42+i*60+boxH/2,386,centerY+boxH/2));right.forEach((id,i)=>edge(386+boxW,centerY+boxH/2,755,42+i*60+boxH/2));
+    left.forEach((id,i)=>node(id,16,42+i*60));right.forEach((id,i)=>node(id,755,42+i*60));node(d.id,386,centerY,true);host.append(svg);
+  }
+  function renderAssumptions(d,host) {
+    note(host,"There are two different boundaries: explicit mathematical hypotheses in the theorem statement, and logical axioms used by the proof. A clean logical-axiom audit does not prove the mathematical hypotheses.");
+    const external=section(host,"External mathematical inputs");
+    if(typeof summary==="object" && summary.assumptions)renderValue(summary.assumptions,external);else external.append(el("p",null,"The finite theorem takes source and balanced-family inputs. Their exact types and provenance control the conditional statement; consult the main theorem and its linked definitions. No external theorem is silently proved by this inspector."));
+    const status=section(host,"External proof and correspondence status");if(typeof summary==="object" && (summary.externalStatus || summary.status))renderValue(summary.externalStatus || summary.status,status);else if(meta.limitations)renderValue(meta.limitations,status);else status.append(el("p","muted","No additional external-input status was embedded. Consult the repository status and maintenance records."));
+    const logical=section(host,"Logical axioms recorded for this declaration");
+    if(Array.isArray(d.axioms)){renderValue(d.axioms,logical);logical.append(el("p","panel-note","These are the recorded #print axioms results, not a list of the theorem's quantified hypotheses."));}
+    else{logical.append(el("p","panel-note","No declaration-specific axiom audit is embedded for this item. Do not infer an empty axiom list from this absence."));if(Array.isArray(root.axioms)){logical.append(el("h4",null,"Public root's recorded logical axioms"));renderValue(root.axioms,logical);}}
+    const explanations={propext:"Propositional extensionality: logically equivalent propositions are equal.","Classical.choice":"Classical choice: selects an element from a type known to be nonempty.","Quot.sound":"Quotient soundness: related representatives determine equal quotient values.",sorryAx:"An unfinished-proof placeholder. It is not an accepted axiom for the checked root."};
+    const ax=Array.isArray(d.axioms)?d.axioms:Array.isArray(root.axioms)?root.axioms:[];for(const a of ax){if(explanations[a]){const p=el("p","small");p.append(el("code",null,a),document.createTextNode(" — " + explanations[a]));logical.append(p);}}
+    const actions=el("div","inline-actions");actions.append(button("Read the root's hypotheses",()=>selectDeclaration(root.id,"statement")),button("Inspect the verification evidence",()=>setTab("provenance")));host.append(actions);
+  }
+  function renderProvenance(d,host) {
+    const own=section(host,"This declaration");renderValue({name:d.name,kind:displayKind(d),status:d.status || "not recorded",module:d.module || "not embedded",file:d.file || "not embedded",line:d.line || "not embedded",endLine:d.endLine || "not embedded",provenance:d.provenance || "No curated declaration-specific provenance recorded."},own);
+    const m=moduleByName.get(d.module);if(m){const mod=section(host,"Source and compiler-index identity");renderValue({file:m.file,sourceSha256:m.sourceSha256,indexSha256:m.indexSha256,imports:m.imports},mod);}
+    const build=section(host,"Artifact snapshot");
+    const verification=meta.verification || {},report=verification.report || {};
+    renderValue({generatedAt:meta.generatedAt,git:meta.git,toolchain:meta.toolchain,scope:meta.scope,edgeMeaning:meta.edgeMeaning,verificationMode:report.verification_mode || "not recorded",verificationSuccess:report.success === undefined ? "not recorded" : report.success,verificationStarted:report.started_utc || "not recorded",verificationFinished:report.finished_utc || "not recorded",verificationSteps:Array.isArray(report.steps)?report.steps.length:"not recorded",releaseCertificate:report.release_certificate === undefined ? "not recorded" : report.release_certificate,reportSha256:verification.reportSha256 || "not recorded",curationSha256:meta.curationSha256 || "not recorded"},build);
+    if(meta.limitations){const limitations=section(host,"Reading and verification limits");renderValue(meta.limitations,limitations);}
+    const lazyRecord=(title,value)=>{
+      if(value===undefined)return;
+      const details=el("details","section-card");details.append(el("summary",null,title));
+      let loaded=false;details.addEventListener("toggle",()=>{if(details.open&&!loaded){loaded=true;const body=el("div");renderValue(value,body);details.append(body);}});host.append(details);
+    };
+    lazyRecord("Complete verification report",verification.report);
+    if(Array.isArray(verification.logs)){
+      const logs=el("details","section-card");logs.append(el("summary",null,"Verification logs ("+verification.logs.length+") · complete text"));let loaded=false;
+      logs.addEventListener("toggle",()=>{if(!logs.open||loaded)return;loaded=true;for(let i=0;i<verification.logs.length;i++){const record=verification.logs[i],detail=el("details","section-card");detail.append(el("summary",null,typeof record==="object"&&record!==null?(record.id || record.step || record.path || record.log || "Log "+(i+1)):"Log "+(i+1)));let shown=false;detail.addEventListener("toggle",()=>{if(detail.open&&!shown){shown=true;const body=el("div");renderValue(record,body);detail.append(body);}});logs.append(detail);}});host.append(logs);
+    }else lazyRecord("Complete verification logs",verification.logs);
+    lazyRecord("All source identities"+(Array.isArray(meta.sourceFiles)?" ("+meta.sourceFiles.length+")":""),meta.sourceFiles);
+    lazyRecord("Pinned build configuration and complete source",meta.buildConfiguration);
+    lazyRecord("Manuscript and evidence asset identities",meta.assets);
+    lazyRecord("External theorem provenance and repair notes",meta.externalProvenance);
+    const known=new Set(["generatedAt","git","toolchain","scope","edgeMeaning","verification","sourceFiles","assets","buildConfiguration","curationSha256","limitations","externalProvenance"]);
+    const extra=Object.fromEntries(Object.entries(meta).filter(([key])=>!known.has(key)));if(Object.keys(extra).length)lazyRecord("Additional snapshot metadata",extra);
+    note(host,"Embedded hashes and receipts identify this snapshot. They do not continuously check files on disk, and this offline page does not rerun Lean. Rebuild the inspector and rerun the repository verifier after changing source.",true);
+    const actions=el("div","inline-actions");actions.append(button("Download provenance JSON",()=>download("v4-inspector-provenance.json",JSON.stringify({schemaVersion:DATA.schemaVersion,meta,root:DATA.root,modules:modules.map(({source,...rest})=>rest)},null,2),"application/json")));host.append(actions);
+  }
+  function safeHref(value) { if(typeof value!=="string"||!value.trim())return null;const v=value.trim();if(/^(?:javascript|vbscript|data):/i.test(v))return null;if(/^[a-z][a-z0-9+.-]*:/i.test(v)&&!/^https?:/i.test(v)&&!/^file:/i.test(v))return null;return v; }
+  const paperBlobs = new Map();
+  function paperBlobUrl(paper) {
+    if(paperBlobs.has(paper))return paperBlobs.get(paper);
+    const raw=paper.dataUrl;if(typeof raw!=="string"||!/^data:application\/pdf;base64,/i.test(raw))throw new Error("No embedded PDF data is present.");
+    const encoded=raw.slice(raw.indexOf(",")+1),binary=atob(encoded),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));paperBlobs.set(paper,url);return url;
+  }
+  function renderPapers(d,host) {
+    host.append(el("p","panel-note","The reader-facing and formalisation-facing manuscripts present the same intended mathematical result at different levels of detail. English explanations and manuscript links are curated navigation, not compiler-verified translations."));
+    if(d.paperAnchors){const anchors=section(host,"Recorded manuscript correspondence for this declaration");renderValue(d.paperAnchors,anchors);}
+    const papers=Array.isArray(DATA.papers)?DATA.papers:Object.entries(DATA.papers||{}).map(([id,p])=>typeof p==="string"?{id,title:id,path:p}:{id,...p});
+    if(!papers.length){host.append(el("div","empty","No manuscript links were embedded. Use the route's reader-facing and autoformalization directories."));return;}
+    for(const paper of papers){
+      const card=el("article","paper-card");card.append(el("h3",null,paper.title || paper.name || paper.id || "Manuscript"));
+      if(paper.description){const p=el("div","paper-description");renderValue(paper.description,p);card.append(p);}if(paper.path)card.append(el("p","mono small wrap",paper.path));
+      const actions=el("div","inline-actions");
+      if(paper.dataUrl){
+        actions.append(button("Open embedded PDF",()=>{try{window.open(paperBlobUrl(paper),"_blank","noopener,noreferrer");}catch(error){toast("Could not open embedded PDF: "+error.message);}}));
+        actions.append(button("Download embedded PDF",()=>{try{const a=el("a");a.href=paperBlobUrl(paper);a.download=paper.downloadName || (paper.id || "manuscript")+".pdf";document.body.append(a);a.click();a.remove();}catch(error){toast("Could not download embedded PDF: "+error.message);}}));
+      }
+      const href=safeHref(paper.href);if(href){const a=el("a",null,paper.dataUrl?"Open repository copy":paper.linkLabel || "Open document");a.href=href;a.target="_blank";a.rel="noopener noreferrer";actions.append(a);}card.append(actions);
+      if(paper.sha256)card.append(el("p","hash","SHA-256: " + paper.sha256));if(paper.anchors)renderValue(paper.anchors,card);if(paper.status)renderValue({status:paper.status},card);host.append(card);
+    }
+    note(host,"These links refer to the recorded document snapshot. If a linked local file is absent, restore the accompanying repository artifact; the inspector itself remains usable offline.",true);
+  }
+  function makeCard(title) {
+    const card=el("section","definition-card");card._returnFocus=document.activeElement;card.setAttribute("role","dialog");card.setAttribute("aria-modal","false");card.style.zIndex=String(++cardZ);card.tabIndex=-1;
+    const titleId="definition-card-title-" + (++cardCounter),header=el("div","card-header"),h=el("h2",null,title);h.id=titleId;card.setAttribute("aria-labelledby",titleId);
+    const close=button("×",()=>closeCard(card));close.setAttribute("aria-label","Close " + title);header.append(h,close);const body=el("div","card-body"),controls=el("div","card-controls");card.append(header,body,controls);$("cards").append(card);cards.push(card);
+    const offset=(cards.length-1)%5*22;card.style.left=Math.max(8,Math.min(window.innerWidth-card.offsetWidth-8,window.innerWidth*.42+offset))+"px";card.style.top=Math.max(8,Math.min(window.innerHeight-170,95+offset))+"px";
+    card.addEventListener("pointerdown",()=>{card.style.zIndex=String(++cardZ);});
+    header.addEventListener("pointerdown",event=>{if(event.target.closest("button")||event.button!==0)return;event.preventDefault();const rect=card.getBoundingClientRect(),dx=event.clientX-rect.left,dy=event.clientY-rect.top;header.setPointerCapture(event.pointerId);const move=e=>{card.style.left=Math.max(0,Math.min(window.innerWidth-card.offsetWidth,e.clientX-dx))+"px";card.style.top=Math.max(0,Math.min(window.innerHeight-45,e.clientY-dy))+"px";};const end=()=>{header.removeEventListener("pointermove",move);header.removeEventListener("pointerup",end);header.removeEventListener("pointercancel",end);};header.addEventListener("pointermove",move);header.addEventListener("pointerup",end);header.addEventListener("pointercancel",end);});
+    close.focus({preventScroll:true});return{card,body,controls};
+  }
+  function closeCard(card){const i=cards.indexOf(card);if(i>=0)cards.splice(i,1);const prior=card._returnFocus;card.remove();if(prior&&prior.isConnected)prior.focus({preventScroll:true});}
+  function openDeclarationCard(id) {
+    const d=byId.get(id);if(!d){openUnknown(id);return;}
+    const {body,controls}=makeCard(d.name);body.append(el("div","eyebrow",displayKind(d)));
+    if(d.plainEnglish){const p=el("div");renderValue(d.plainEnglish,p);body.append(p);}else body.append(el("p","muted",isTerminal(d)?"A compiler-resolved reference. Its standalone source body is not embedded in this artifact.":"No hand-written translation is supplied for this declaration. Read its exact source statement below, or inspect the full module for section variables and local notation."));
+    if(d.how){const details=el("details");details.append(el("summary",null,"What this code does"));renderValue(d.how,details);body.append(details);}
+    if(d.statement||d.source)renderCode(d.statement||d.source,d,body,"Lean source statement");
+    if(d.file)body.append(el("p","mono small wrap",d.file+(d.line?":"+d.line:"")));
+    controls.append(button("Inspect declaration",()=>selectDeclaration(d.id,"statement")),button("Complete source",()=>selectDeclaration(d.id,"source")),button("Dependencies",()=>selectDeclaration(d.id,"dependencies")));if(d.contextDeclaration)controls.append(button("Open enclosing declaration",()=>selectDeclaration(d.contextDeclaration,"source")));
+  }
+  function openUnknown(id) {const{body}=makeCard(id);body.append(el("p",null,"This name was referenced in the extracted index, but no declaration body or curated explanation is embedded. No definition has been inferred from its spelling."));}
+  function openSyntax(token) {const{body}=makeCard("Lean syntax: " + token);renderValue(syntax[token] || "No syntax explanation is recorded.",body);body.append(el("p","muted small","This is an informal language guide, not a theorem or a source reference."));}
+  function renderNavigation() {
+    const query=$("search").value.trim().toLowerCase(),module=$("module-filter").value,kind=$("kind-filter").value,libraries=$("include-libraries").checked;
+    const terms=query.split(/\s+/).filter(Boolean);
+    const results=declarations.filter(d=>(libraries||!isLibrary(d))&&(!module||d.module===module)&&(!kind||displayKind(d)===kind)&&terms.every(term=>(d.name+" "+(d.module||"")+" "+textValue(d.plainEnglish||"")).toLowerCase().includes(term)));
+    results.sort((a,b)=>(a.id===root.id?-1:b.id===root.id?1:0)||a.name.localeCompare(b.name));
+    const list=$("nav-list");list.replaceChildren();const visible=results.slice(0,navLimit);const fragment=document.createDocumentFragment();
+    for(const d of visible){const row=button("",()=>selectDeclaration(d.id),"decl-row");row.dataset.id=d.id;row.setAttribute("aria-current",String(selected.id===d.id));row.title=d.name;row.append(el("span","name",shortName(d.name)));const sub=el("span","meta");sub.append(el("span","kind",displayKind(d)),document.createTextNode(" · "+(d.module?shortName(d.module):"library reference")));row.append(sub);fragment.append(row);}list.append(fragment);
+    if(!results.length)list.append(el("div","nav-empty","No matching declarations. Try a shorter name, another module, or include library references."));
+    $("nav-count").textContent=results.length.toLocaleString()+" matching · "+visible.length.toLocaleString()+" shown";
+    $("nav-more").hidden=visible.length>=results.length;$("nav-more").textContent="Show next "+Math.min(160,results.length-visible.length)+" ("+(results.length-visible.length).toLocaleString()+" remaining)";
+  }
+  function fillFilters(){for(const name of unique(declarations.map(d=>d.module)).sort()){const opt=el("option",null,name);opt.value=name;$("module-filter").append(opt);}for(const kind of unique(declarations.map(displayKind)).sort()){const opt=el("option",null,kind);opt.value=kind;$("kind-filter").append(opt);}}
+  function renderIntro(){if(typeof summary==="object"&&summary.title)$("intro-title").textContent=summary.title;renderValue(summaryText || scopeText,$("intro-copy"));const local=declarations.filter(d=>!isTerminal(d));const edges=declarations.reduce((n,d)=>n+dependencyIds(d).length,0);for(const [n,label]of[[local.length,"source declarations"],[modules.length,"indexed modules"],[edges,"direct source references"]]){const stat=el("span","stat");stat.append(el("b",null,n.toLocaleString()),document.createTextNode(label));$("stats").append(stat);}$("trust-boundary").append(el("p",null,"The kernel checks the formal implication under its explicit assumptions. The external family theorem is a human mathematical input, not a Lean proof supplied by this inspector. Runtime and the ETH consequence remain out of scope."));if(typeof summary==="object"&&summary.scope)renderValue(summary.scope,$("trust-boundary"));$("trust-boundary").append(el("p",null,edgeMeaning));if(meta.limitations)renderValue(meta.limitations,$("trust-boundary"));}
+  function showHelp(){const{body}=makeCard("How to inspect this proof");const ul=el("ol","value-list");for(const text of["Start with the plain-English result, then read the main theorem's exact hypotheses in Statement.","Search declarations by name, module, or curated explanation. Library-reference cards can be included explicitly.","Click an underlined identifier to open its compiler-resolved definition in a draggable card. Several cards can remain open. Purple keywords and symbols explain Lean syntax.","Use Source for the full declaration, including its proof, or expand the complete module. Neither source view is silently truncated.","Dependencies shows actual compiler source references and callers, not an invented proof outline. The complete lists remain available below the bounded graph.","Assumptions separates mathematical input theorems from logical axioms. Provenance records the source and verification snapshot.","Press / to search. Press Escape to close the front definition card. Use the size buttons to change text size; dragging stays aligned with the pointer."]){ul.append(el("li",null,text));}body.append(ul);}
+  let scale=100;try{const saved=Number(localStorage.getItem("v4-inspector-font-scale"));if(saved>=70&&saved<=180)scale=saved;}catch(_){}
+  function applyScale(){document.documentElement.style.fontSize=(16*scale/100)+"px";$("scale-value").textContent=scale+"%";$("scale-down").disabled=scale<=70;$("scale-up").disabled=scale>=180;try{localStorage.setItem("v4-inspector-font-scale",String(scale));}catch(_){}for(const card of cards){const rect=card.getBoundingClientRect();card.style.left=Math.max(0,Math.min(rect.left,window.innerWidth-card.offsetWidth))+"px";}}
+  $("scale-down").addEventListener("click",()=>{scale=Math.max(70,scale-10);applyScale();});$("scale-up").addEventListener("click",()=>{scale=Math.min(180,scale+10);applyScale();});$("scale-reset").addEventListener("click",()=>{scale=100;applyScale();});
+  for(const tab of document.querySelectorAll("[data-tab]")){tab.addEventListener("click",()=>setTab(tab.dataset.tab));tab.addEventListener("keydown",e=>{const tabs=[...document.querySelectorAll("[data-tab]")],i=tabs.indexOf(tab);let next;if(e.key==="ArrowRight")next=(i+1)%tabs.length;else if(e.key==="ArrowLeft")next=(i+tabs.length-1)%tabs.length;else if(e.key==="Home")next=0;else if(e.key==="End")next=tabs.length-1;else return;e.preventDefault();tabs[next].focus();setTab(tabs[next].dataset.tab);});}
+  let searchTimer;$("search").addEventListener("input",()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{navLimit=160;renderNavigation();},120);});for(const id of["module-filter","kind-filter","include-libraries"])$(id).addEventListener("change",()=>{navLimit=160;renderNavigation();});
+  $("clear-search").addEventListener("click",()=>{$("search").value="";navLimit=160;renderNavigation();$("search").focus();});$("nav-more").addEventListener("click",()=>{navLimit+=160;renderNavigation();});
+  $("show-root").addEventListener("click",()=>selectDeclaration(root.id,"statement"));$("intro-root").addEventListener("click",()=>selectDeclaration(root.id,"statement"));$("intro-assumptions").addEventListener("click",()=>selectDeclaration(root.id,"assumptions"));$("intro-papers").addEventListener("click",()=>setTab("papers"));$("show-provenance").addEventListener("click",()=>setTab("provenance"));$("show-help").addEventListener("click",showHelp);
+  $("toggle-nav").addEventListener("click",()=>{const collapsed=$("declaration-navigation").classList.toggle("mobile-collapsed");$("toggle-nav").setAttribute("aria-expanded",String(!collapsed));$("toggle-nav").textContent=collapsed?"Show navigation":"Hide navigation";});
+  document.addEventListener("keydown",e=>{const typing=e.target.matches("input,textarea,select,[contenteditable=true]");if(e.key==="/"&&!typing){e.preventDefault();$("search").focus();$("search").select();}if(e.key==="Escape"&&cards.length){e.preventDefault();const front=cards.reduce((a,b)=>Number(a.style.zIndex)>Number(b.style.zIndex)?a:b);closeCard(front);}});
+  window.addEventListener("hashchange",()=>{const d=declarationFromLocation();if(d)selectDeclaration(d.id,null,false);});window.addEventListener("resize",()=>{for(const card of cards){const rect=card.getBoundingClientRect();card.style.left=Math.max(0,Math.min(rect.left,window.innerWidth-card.offsetWidth))+"px";card.style.top=Math.max(0,Math.min(rect.top,window.innerHeight-45))+"px";}});
+  applyScale();fillFilters();renderIntro();renderNavigation();selectDeclaration((declarationFromLocation()||root).id,"statement",false);
+})();
+</script>
+</body>
+</html>

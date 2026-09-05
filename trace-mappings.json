@@ -1,0 +1,937 @@
+[
+  {
+    "paperId": "reader",
+    "label": "thm:reader-main",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteRootStatement.FiniteRootSpecFor"
+    ],
+    "classification": "statement",
+    "note": "The public gap and same-matrix size theorem is proved from the stated external contracts. A proved source-logarithm conversion changes fixed constants but preserves the constructed matrices. The second declaration defines the exact conclusion; it is not an additional proof."
+  },
+  {
+    "paperId": "reader",
+    "label": "sec:reader-assembly",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteCanonicalRootAssembly.canonicalRootConstruct"
+    ],
+    "classification": "assembled",
+    "note": "The final proof combines the communication gap and size bound for one named, promise-independent matrix constructor. This is a public-result correspondence, not a line-by-line proof trace."
+  },
+  {
+    "paperId": "reader",
+    "label": "sec:reader-external-inputs",
+    "lean": [
+      "EthInapproximability.V4.FiniteSourceLogNormalization.FiniteSourceRealLogSpec",
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteSourceProvider",
+      "EthInapproximability.V4.FiniteSourceLogNormalization.normalizeSourceLog_spec",
+      "EthInapproximability.V4.FiniteSourceLogNormalization.sourceSize_realLog_to_floorLog",
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.normalizeSourceLog_rootConstruct"
+    ],
+    "classification": "external",
+    "note": "The source theorem is an external input: its provider and specification do not prove existence. Separately, the linked conversion theorems prove the paragraph's logarithm normalization and preserve the actual matrices. Only the fixed source exponent and cutoff change."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-balanced-size",
+    "lean": [
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteBalancedFamilySpec"
+    ],
+    "classification": "external",
+    "note": "The required finite family size bound is a field of the external balanced-family contract. The manuscript's polynomial-family existence proof remains outside Lean by design."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-balanced-count",
+    "lean": [
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteBalancedFamilySpec"
+    ],
+    "classification": "external",
+    "note": "The base pattern-count bounds are fields of the external contract. They alone do not imply the stronger product estimates for every possible family; the manuscript proves those estimates for one specifically chosen polynomial family outside Lean."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-product-balanced",
+    "lean": [
+      "NPCC.IsBalancedFamily"
+    ],
+    "classification": "definition",
+    "note": "This is the exact finite counting predicate used in Lean: the family is indexed with repetitions allowed, its index carrier is nonempty, and every pattern on at most the prescribed number of distinct coordinates has the displayed error bound."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-literal-product",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.TerminalTwoStream.productFamily",
+      "EthInapproximability.V4.FiniteExceptionalTerminalRestrictionDatum.terminalLocalizedFamily"
+    ],
+    "classification": "definition",
+    "note": "The two declarations present the same independent donor-index product with explicit finite reindexings: one uses a numbered copy set and the other a selected finite donor set. These definitions do not themselves prove product balancedness."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-product-errors",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.Section5Admissibility.epsProd",
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessPackage.CanonicalExternalBalancednessAt"
+    ],
+    "classification": "external",
+    "note": "The first declaration defines the accumulated product error. The second records the three external product-count clauses at their displayed errors. Their simultaneous existence is proved for the chosen family in the manuscript, not in Lean."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-interlace",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.interlace"
+    ],
+    "classification": "definition",
+    "note": "The finite row and function-valued column carriers, and the entry rule, are the same as the displayed interlace construction."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-three-rung",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.lambdaProfile"
+    ],
+    "classification": "definition",
+    "note": "This defines the same three retained-column lower bounds, with offsets zero, one, and two."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-robust",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.robustProfile"
+    ],
+    "classification": "definition",
+    "note": "The robustness profile is the same three-rung quantity at one outer copy and row density two to the negative depth."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-stage1",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageOne"
+    ],
+    "classification": "definition",
+    "note": "The displayed first-stage matrix is defined from the same seed matrix and selected coordinate."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-stage2",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageTwoWithRange"
+    ],
+    "classification": "definition",
+    "note": "The second-stage entry rule uses the actual balanced-family entries. Lean makes the range proof explicit so those entries inhabit the correct finite row carrier."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-stage3",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageThreeWithRange"
+    ],
+    "classification": "definition",
+    "note": "The third-stage entry rule is the displayed interlace of the second stage, with its finite range information explicit."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-guarded-source",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.guardedRow"
+    ],
+    "classification": "definition",
+    "note": "The source-row values are computed from the same ordered source graph and guarded coordinates, before a source promise is used."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-raw-template",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.rawBWithLegal",
+      "EthInapproximability.V4.FiniteStageFourCore.rawB"
+    ],
+    "classification": "definition",
+    "note": "The first declaration gives the actual raw fourth-stage entry rules on legal inputs. The second is the total constructor, with a fixed fallback outside that legal range."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-protected-entry",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourTransports.Total.N_apply_eq_rawB",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.N_eq_transpose_protectedA"
+    ],
+    "classification": "statement",
+    "note": "These proved entry and transpose identities connect the actual protected matrix to the raw matrix after labels are forgotten. The paper writes the untransposed protected matrix; Lean's named N is its transpose."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-postcomposition",
+    "lean": [
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.N",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.Nref",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.W",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.Rplus",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.successor_eq_canonical_composition"
+    ],
+    "classification": "assembled",
+    "note": "The same protected matrix, reference restriction, scale-alignment interlace, and final bridge interlace are composed literally. The final equality records the canonical finite reindexing of the successor."
+  },
+  {
+    "paperId": "reader",
+    "label": "thm:reader-protected-stage4",
+    "lean": [
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalDenseStageFourConclusion",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceBase_at_canonicalSchedule",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceScalarProfile_at_canonicalSchedule",
+      "EthInapproximability.V4.FiniteRawStageFourUpper.rawB_noUpper_of_levelFacts",
+      "EthInapproximability.V4.FiniteStageFourTransports.Total.N_communicationComplexity_eq_rawB_of_checklist"
+    ],
+    "classification": "assembled",
+    "note": "The paper's bundled protected certificate is split among dense lower-bound, reference-profile, upper-bound, and transport results. No one linked declaration states the whole bundle. Local structural and numerical premises remain visible in each component."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-protected-dense",
+    "lean": [
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalDenseStageFourConclusion"
+    ],
+    "classification": "statement",
+    "note": "This is the dense fourth-stage conclusion for the actual protected matrix at the canonical schedule, under its explicitly stated structural and semantic conditions."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-protected-exact",
+    "lean": [
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalDenseStageFourConclusion",
+      "EthInapproximability.V4.FiniteRawStageFourUpper.rawB_noUpper_of_levelFacts",
+      "EthInapproximability.V4.FiniteStageFourTransports.Total.N_communicationComplexity_eq_rawB_of_checklist"
+    ],
+    "classification": "assembled",
+    "note": "Exact cost follows by combining the dense lower bound with the raw selector upper bound and the proved cost-preserving protection/transpose transport. The links are the components, not a single theorem with this exact equality as its entire statement."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-reference-rungs",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceBase_at_canonicalSchedule",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceScalarProfile_at_canonicalSchedule"
+    ],
+    "classification": "assembled",
+    "note": "The three reference rungs are represented through the three-rung profile and its canonical scalar package. The reference restriction is the actual one, not an arbitrary replacement matrix."
+  },
+  {
+    "paperId": "reader",
+    "label": "thm:reader-scale-aligned",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualW_commonThreshold",
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualU_dense_of_no_shallow_protocol",
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualW_dense_of_actualU_dense",
+      "EthInapproximability.V4.FiniteScaleLowRungs.actualW_three_low_rungs",
+      "EthInapproximability.V4.FiniteScaleAlignmentShell.actualW_yes_upper",
+      "EthInapproximability.V4.FiniteCanonicalEnrichedScaleAlignmentComposition.canonicalActualScaleAlignmentNoShallow_of_enriched_terminalMassClosure"
+    ],
+    "classification": "assembled",
+    "note": "The same scale-aligned certificate is assembled from an actual-protocol contradiction, transpose transport, reference rungs, and selector upper bound. The local wrappers have premises supplied by the final root's physical proof; none should be shown as unconditional closure by itself."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-W-exact",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualW_exact_of_denseEndpoint"
+    ],
+    "classification": "assembled",
+    "note": "The exact cost is obtained from the actual dense lower endpoint and matching selector upper bound. This theorem explicitly takes the dense endpoint as a local premise, which is established elsewhere in the root proof."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-W-dense",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualU_dense_of_no_shallow_protocol",
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualW_dense_of_actualU_dense",
+      "EthInapproximability.V4.FiniteCanonicalEnrichedScaleAlignmentComposition.canonicalActualScaleAlignmentNoShallow_of_enriched_terminalMassClosure"
+    ],
+    "classification": "assembled",
+    "note": "The operational lower bound is first proved before transposition and then transferred to the displayed retained densities. These are composition steps whose physical premises are discharged by the final root."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-W-low",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleLowRungs.actualW_three_low_rungs"
+    ],
+    "classification": "statement",
+    "note": "The actual reference restriction supplies the three low rungs for the scale-aligned matrix, under the displayed local reference and structural conditions."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-W-upper",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentShell.actualW_yes_upper"
+    ],
+    "classification": "statement",
+    "note": "An arbitrary upper bound on the protected input is increased only by the alignment selector cost, exactly as in the displayed implication."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-common-threshold",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.CommonThreshold"
+    ],
+    "classification": "definition",
+    "note": "The record packages the same exact cost, dense bound, and three-rung bound at one common row threshold. It contains the bridge's hypotheses, not its conclusion."
+  },
+  {
+    "paperId": "reader",
+    "label": "thm:reader-common-bridge",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.rationalCommonBridge",
+      "EthInapproximability.V4.FiniteCommonBridge.rplus_of_commonThreshold"
+    ],
+    "classification": "statement",
+    "note": "The first theorem is the generic common-threshold bridge with exact cost, regenerated robustness, and upper-bound transport. The second applies it to the actual constructed matrices. Lean also records the exact number of selector bits."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-bridge-exact",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.rationalCommonBridge"
+    ],
+    "classification": "statement",
+    "note": "The displayed exact cost is one conclusion of the generic bridge theorem, subject to its explicit common-threshold and numerical hypotheses."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-bridge-robust",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.rationalCommonBridge"
+    ],
+    "classification": "statement",
+    "note": "The displayed regenerated robustness is another conclusion of the same bridge theorem for the identical output matrix."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-bridge-upper",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.rationalCommonBridge"
+    ],
+    "classification": "statement",
+    "note": "The bridge theorem includes the displayed implication from an arbitrary input upper bound to the selector-adjusted upper bound on the same output."
+  },
+  {
+    "paperId": "reader",
+    "label": "cor:reader-one-level",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualSuccessor_yesUpper",
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualSuccessor_noExactRobust_of_scaleAlignment_no_shallow",
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_shape_from_N"
+    ],
+    "classification": "assembled",
+    "note": "The positive implication, negative exact cost and robustness, and exact carrier equations are separate Lean theorems about the same successor. Their local lower-bound premises are proved when the final root is assembled."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-one-level-yes",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualSuccessor_yesUpper"
+    ],
+    "classification": "statement",
+    "note": "A properly colourable source and a seed upper bound give the displayed upper bound on the actual canonically reindexed successor."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-one-level-no",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualSuccessor_noExactRobust_of_scaleAlignment_no_shallow"
+    ],
+    "classification": "assembled",
+    "note": "The negative exact cost is a conclusion of the one-level assembly from the semantic conditions, actual reference profile, and actual-protocol lower bound. The last two inputs are discharged by the surrounding proof."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-one-level-profile",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualSuccessor_noExactRobust_of_scaleAlignment_no_shallow"
+    ],
+    "classification": "assembled",
+    "note": "The regenerated three-rung profile is proved together with the exact negative cost for the identical successor, using the explicit local premises."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-one-level-rows",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_shape_from_N"
+    ],
+    "classification": "statement",
+    "note": "The row count is an exact carrier identity for the actual successor, expressed using the protected input matrix's carriers."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-one-level-cols",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_shape_from_N"
+    ],
+    "classification": "statement",
+    "note": "The column count is the other exact carrier identity for the same successor."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-seed-semantics",
+    "lean": [
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_exact",
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_robust",
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_upper",
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_matrixBits"
+    ],
+    "classification": "assembled",
+    "note": "The seed's exact cost, robust profile, upper bound, and naming width are individual component theorems. The robustness theorem explicitly requires positive depth."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-recursion",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.stateChain",
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.inputAt",
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.yesBudgetAt"
+    ],
+    "classification": "definition",
+    "note": "These define the one dependent matrix-and-budget recursion. The source branch is fixed, and the positive and negative arguments use the same sequence."
+  },
+  {
+    "paperId": "reader",
+    "label": "thm:reader-gap-induction",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_yes_induction_through",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_no_induction_through",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_yes_at_fixedK",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_no_at_fixedK"
+    ],
+    "classification": "assembled",
+    "note": "The two implications are proved separately along the same literal recursion. Per-level legality, numerical, and lower-bound premises are explicit here and are supplied by the root assembly beyond a formula-independent cutoff."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-iteration-yes",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_yes_induction_through"
+    ],
+    "classification": "statement",
+    "note": "The positive source implication gives the displayed upper bound at every level through the fixed endpoint, under the per-level structural and numerical conditions."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-iteration-no",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_no_induction_through",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.CanonicalNoState"
+    ],
+    "classification": "statement",
+    "note": "The theorem establishes the exact budget-plus-level cost and regenerated robust profile. The second declaration merely defines that two-part conclusion. Local per-level premises are discharged in the final root."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-protected-collapse",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualCarrierBounds.protectedRows_card_components",
+      "EthInapproximability.V4.FiniteActualCarrierBounds.protectedCols_card_components"
+    ],
+    "classification": "assembled",
+    "note": "The two exact cardinality identities count the labelled protected rows and columns, including the displayed constants. They concern the actual carriers rather than a numerical surrogate."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-actual-row-recurrence",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.inputAt_succ_rows"
+    ],
+    "classification": "statement",
+    "note": "This is the exact row-count recurrence for the matrix stored at the next level of the actual canonical chain."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-actual-col-recurrence",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.inputAt_succ_cols"
+    ],
+    "classification": "statement",
+    "note": "This is the exact column-count recurrence for the same next-level matrix."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-width-arrow",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualSizeMajorant.actualSuccessor_matrixBits_le_oneArrowMajorant",
+      "EthInapproximability.V4.FiniteActualSizeMajorant.oneArrowMajorant_eq_quadratic",
+      "EthInapproximability.V4.FiniteActualSizeMajorant.oneArrowMajorant_le_twentySeven_mul_sq"
+    ],
+    "classification": "assembled",
+    "note": "The displayed one-step naming-width estimate, quadratic identity, and simpler quadratic upper bound are three Lean lemmas with the required ingredient and positivity assumptions explicit."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-width-induction",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalSameMatrixEnvelope.canonicalInput_seedMatrixBits_le_through"
+    ],
+    "classification": "statement",
+    "note": "The scalar width induction controls the actual matrices at every level through the fixed endpoint. Its initial ingredient envelope is made explicit in Lean."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-final-width-cutoff",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalModerateSeedSize.exists_formulaIndependentCanonicalModerateSeed_matrixBits_le"
+    ],
+    "classification": "statement",
+    "note": "One cutoff is chosen before the formula and source-list index; beyond it the actual final matrix has the displayed naming-width bound. Lean uses a more detailed internal size proof but the same matrices and quantifier order."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-denominator-cleared",
+    "lean": [
+      "EthInapproximability.V4.FiniteRootStatement.two_mul_sizeExponent_le_div"
+    ],
+    "classification": "statement",
+    "note": "This is the exact integer division inequality converting the two side exponents into the final entry exponent, with a positive fixed parameter."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-main-yes",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteRootStatement.GapConclusion"
+    ],
+    "classification": "statement",
+    "note": "The root proves the satisfiable-formula implication: some member of the already fixed, nonempty family has cost at most its budget. GapConclusion defines this clause together with the negative clause."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-main-no",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteRootStatement.GapConclusion"
+    ],
+    "classification": "statement",
+    "note": "The root proves that every member has exact cost equal to budget plus the fixed gap for an unsatisfiable formula. This is equality, not only a lower bound, and uses the same family as the positive clause."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-main-width",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteRootStatement.SourceSizeConclusion"
+    ],
+    "classification": "statement",
+    "note": "The root proves the naming-width bound for every member of the same constructed family. SourceSizeConclusion defines this output condition; it is not an extra outside assumption."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-main-sides",
+    "lean": [
+      "EthInapproximability.V4.FiniteRootStatement.branchOutput_size_of_matrixBits_le_sizeExponent",
+      "EthInapproximability.V4.FiniteRootStatement.matrixEntryConclusion_of_sourceSize"
+    ],
+    "classification": "statement",
+    "note": "These elementary conversions derive both side bounds from the naming-width bound for the identical output matrix. The final root applies them to its constructed family."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-main-entries",
+    "lean": [
+      "EthInapproximability.V4.FiniteRootStatement.branchOutput_size_of_matrixBits_le_sizeExponent",
+      "EthInapproximability.V4.FiniteRootStatement.matrixEntryConclusion_of_sourceSize",
+      "EthInapproximability.V4.FiniteRootStatement.two_mul_sizeExponent_le_div"
+    ],
+    "classification": "assembled",
+    "note": "Multiplying the actual side bounds and using the integer exponent inequality gives the final entry-count bound. There is no replacement matrix used only for the size argument."
+  },
+  {
+    "paperId": "reader",
+    "label": "lem:reader-defect-induction",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.DefectInduction.defectInduction"
+    ],
+    "classification": "statement",
+    "note": "This is an audited reused defect-induction theorem, specialized in the reader to column density three fifths. Lean explicitly lists the ambient legality, logarithmic margin, near-full, and two-copy premises that the surrounding bridge argument supplies."
+  },
+  {
+    "paperId": "reader",
+    "label": "eq:reader-auxiliary-defect",
+    "lean": [
+      "EthInapproximability.ParameterizedNP.DefectInduction.auxiliaryDefectBound"
+    ],
+    "classification": "statement",
+    "note": "The audited reused auxiliary theorem gives the one-bit-smaller lower bound under the displayed relaxed defect allowance. Its numerical and two-copy premises remain explicit."
+  },
+  {
+    "paperId": "formal",
+    "label": "ass:finite-source",
+    "lean": [
+      "EthInapproximability.V4.FiniteSourceLogNormalization.FiniteSourceRealLogSpec",
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteSourceProvider"
+    ],
+    "classification": "external",
+    "note": "The manuscript's real-log source contract is represented explicitly. Its existence theorem remains external; the provider is fixed before either satisfiability promise is used."
+  },
+  {
+    "paperId": "formal",
+    "label": "lem:source-log-normalization",
+    "lean": [
+      "EthInapproximability.V4.FiniteSourceLogNormalization.normalizeSourceLog_spec",
+      "EthInapproximability.V4.FiniteSourceLogNormalization.sourceSize_realLog_to_floorLog",
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.normalizeSourceLog_rootConstruct"
+    ],
+    "classification": "statement",
+    "note": "The logarithm conversion changes fixed numerical constants while preserving all source graphs and the actual matrix-and-budget construction. This is a statement correspondence, not identical proof text."
+  },
+  {
+    "paperId": "formal",
+    "label": "ass:balanced-family",
+    "lean": [
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteBalancedFamilySpec",
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessPackage.CanonicalExternalBalancednessAt"
+    ],
+    "classification": "external",
+    "note": "The full external input comprises ordinary balance and the three product-counting clauses for the same selected family. The ordinary balance record alone is insufficient."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:balanced-family-realization",
+    "lean": [
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteBalancedFamilyProvider",
+      "EthInapproximability.V4.FiniteExternalInterfaces.FiniteBalancedFamilySpec",
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessPackage.CanonicalExternalBalancednessAt"
+    ],
+    "classification": "external",
+    "note": "These interfaces are realized by the polynomial-family argument on paper. They are not Lean proofs of that existence theorem; family existence intentionally remains external to Lean."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:communication-cost",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.communicationComplexity"
+    ],
+    "classification": "definition",
+    "note": "Deterministic communication cost uses the imported protocol model. The definition is a mathematical minimum, not a running-time bound."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:interlace",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.interlace"
+    ],
+    "classification": "definition",
+    "note": "The coordinate-selector matrix construction has a direct Lean definition."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:robust-profile",
+    "lean": [
+      "EthInapproximability.V4.FiniteDefinitions.robustProfile",
+      "EthInapproximability.V4.FiniteDefinitions.lambdaProfile",
+      "EthInapproximability.V4.FiniteDefinitions.dyadicDepth"
+    ],
+    "classification": "definition",
+    "note": "The three lower-bound requirements are packaged as a minimum at the specified row density."
+  },
+  {
+    "paperId": "formal",
+    "label": "lem:same-object-size",
+    "lean": [
+      "EthInapproximability.V4.FiniteRootStatement.branchOutput_size_of_matrixBits_le_sizeExponent",
+      "EthInapproximability.V4.FiniteRootStatement.two_mul_sizeExponent_le_div"
+    ],
+    "classification": "statement",
+    "note": "A naming-width bound gives side and entry bounds for the very same matrix, using the explicit floor-division inequality. The Lean statement uses the public BranchOutput record."
+  },
+  {
+    "paperId": "formal",
+    "label": "def:level-parameters",
+    "lean": [
+      "EthInapproximability.V4.FiniteLevelParameters.LevelParameters"
+    ],
+    "classification": "definition",
+    "note": "The six construction parameters are data, separate from proofs that they meet numerical or semantic conditions."
+  },
+  {
+    "paperId": "formal",
+    "label": "def:level-checklist",
+    "lean": [
+      "EthInapproximability.V4.FiniteLevelParameters.LevelChecklist"
+    ],
+    "classification": "definition",
+    "note": "The structural conditions specify when the genuine constructor branch is usable. They do not contain the communication-gap conclusion."
+  },
+  {
+    "paperId": "formal",
+    "label": "def:semantic-checklist",
+    "lean": [
+      "EthInapproximability.V4.FiniteLevelSemanticChecklist.LevelSemanticChecklist",
+      "EthInapproximability.V4.FiniteLevelSemanticChecklist.NoSeedSemantics"
+    ],
+    "classification": "definition",
+    "note": "The negative-branch conditions separate the incoming seed theorem from additional numerical requirements. Inspect the fields rather than treating the record as an unexplained certificate."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:canonical-parameters",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalParameterSchedule.Schedule.levelChecklist",
+      "EthInapproximability.V4.FiniteCanonicalLevelReadiness.arithmeticReadinessAt_of_sourceWidthCutoff",
+      "EthInapproximability.V4.FiniteCanonicalLevelReadiness.levelChecklistAt_of_sourceWidthCutoff"
+    ],
+    "classification": "assembled",
+    "note": "Lean splits parameter correctness into the local arithmetic schedule and its application along the actual iteration. The local theorem exposes readiness hypotheses; later cutoff theorems supply them. This is not a one-to-one proof trace."
+  },
+  {
+    "paperId": "formal",
+    "label": "lem:finite-cutoff",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalFixedKCutoff.exists_formulaIndependentCutoff",
+      "EthInapproximability.V4.FiniteCanonicalModerateSeedSize.exists_formulaIndependentCanonicalModerateSeedCutoff",
+      "EthInapproximability.V4.FiniteCanonicalRootAssembly.canonical_fixedK_sameMatrix_root"
+    ],
+    "classification": "assembled",
+    "note": "Separate cutoff results are combined before the input formula is quantified. No single intermediate cutoff theorem proves every gate by itself; the root assembly displays the combination and its remaining local producer inputs."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:stage1",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageOne"
+    ],
+    "classification": "definition",
+    "note": "First-stage entries are defined on the explicit finite carriers."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:stage2",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageTwoWithRange"
+    ],
+    "classification": "definition",
+    "note": "The second stage uses the fixed balanced-family coordinates. The Lean definition makes the entry-range proof explicit."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:stage3",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.stageThreeWithRange"
+    ],
+    "classification": "definition",
+    "note": "The third-stage matrix is the specified interlace/transpose composition, with finite coordinate bounds explicit."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:guarded-source",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.guardedRow",
+      "EthInapproximability.V4.FiniteStageFourCore.unslabbedRow"
+    ],
+    "classification": "definition",
+    "note": "The guarded source entry is defined by the actual embedded source coordinate and local incidence rule."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:raw-source-row",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.rawBWithLegal",
+      "EthInapproximability.V4.FiniteStageFourCore.rawB_of_legal"
+    ],
+    "classification": "definition",
+    "note": "This equation is the source-row case of the legal raw matrix. The total wrapper's legal-branch theorem connects that case to the public object."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:protected-entry",
+    "lean": [
+      "EthInapproximability.V4.FiniteStageFourCore.protectedAWithLegal",
+      "EthInapproximability.V4.FiniteStageFourCore.rowForget",
+      "EthInapproximability.V4.FiniteStageFourCore.colForgetWithLegal",
+      "EthInapproximability.V4.FiniteStageFourCore.protectedA_of_legal"
+    ],
+    "classification": "definition",
+    "note": "Protected entries are obtained by forgetting the duplication labels and reading the raw entry."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:total-construction",
+    "lean": [
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.successor_eq_canonical_composition",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.N_eq_transpose_protectedA",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.Nref_eq_reference_restriction",
+      "EthInapproximability.V4.FiniteLevelParameters.constructorGuards"
+    ],
+    "classification": "assembled",
+    "note": "Totality, legal-branch selection, and composition equations are represented by several definitions and theorems. No single declaration asserts the entire paper paragraph."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:protected-stage4",
+    "lean": [
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalDenseStageFourConclusion",
+      "EthInapproximability.V4.FiniteRawStageFourUpper.rawB_noUpper_of_levelFacts",
+      "EthInapproximability.V4.FiniteStageFourTransports.Total.N_communicationComplexity_eq_rawB_of_checklist",
+      "EthInapproximability.V4.FiniteTotalLevelConstruction.Nref_eq_reference_restriction",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceBase_at_canonicalSchedule",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.exists_formulaModerateSeed_literalReferenceProfiles"
+    ],
+    "classification": "assembled",
+    "note": "This maps the four-clause paper certificate to several Lean components, not one theorem with an identical statement. The canonical dense theorem supplies the lower clause; the raw upper theorem and cost-preserving transport supply the matching upper bound; Nref retains the full column carrier by its restriction definition; the minimum-profile theorem packages the three reference rungs. Intermediate declarations expose numerical, semantic, and projection conditions supplied along the canonical chain. Do not label the dense theorem alone as proving the entire certificate."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:protected-dense",
+    "lean": [
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalDenseStageFourConclusion",
+      "EthInapproximability.V4.FiniteProtectedCanonicalSeedDistinctNoShallow.canonicalActualProtectedNoShallow"
+    ],
+    "classification": "assembled",
+    "note": "For the canonical schedule, Lean first excludes shallow protocols on the actual retained matrices and then obtains the dense lower bound. This maps only the dense clause, not the entire four-clause protected theorem."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:reference-rungs",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.actualReferenceBase_at_canonicalSchedule",
+      "EthInapproximability.V4.FiniteCanonicalReferenceProfile.exists_formulaModerateSeed_literalReferenceProfiles",
+      "EthInapproximability.V4.FiniteDefinitions.lambdaProfile"
+    ],
+    "classification": "assembled",
+    "note": "Lean packages the three inequalities into one minimum-profile bound. The local producer exposes a projection condition; the formula-uniform producer supplies the required profile along the actual chain."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:actual-U-no-shallow",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.ActualScaleAlignmentNoShallowProtocol",
+      "EthInapproximability.V4.FiniteCanonicalEnrichedScaleAlignmentComposition.canonicalActualScaleAlignmentNoShallow_of_enriched_terminalMassClosure"
+    ],
+    "classification": "assembled",
+    "note": "The target literally quantifies over retained submatrices and their protocols. The composition theorem consumes the terminal-counting argument; the final root supplies that argument from the explicit balanced-family clauses. Its visible premise is not silently proved by this correspondence link."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:scale-aligned",
+    "lean": [
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualW_dense_of_actualU_dense",
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualW_commonThreshold",
+      "EthInapproximability.V4.FiniteScaleLowRungs.actualW_three_low_rungs"
+    ],
+    "classification": "assembled",
+    "note": "The dense bound, exact ambient cost, and three lower rungs are assembled separately. These declarations explain the assembly; their hypotheses remain part of their statements."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:common-bridge",
+    "lean": [
+      "EthInapproximability.V4.FiniteCommonBridge.rationalCommonBridge",
+      "EthInapproximability.V4.FiniteCommonBridge.rplus_of_commonThreshold"
+    ],
+    "classification": "assembled",
+    "note": "The generic bridge returns exact cost, regenerated robustness, selector-bit accounting, and upper-bound transport. Lean uses audited inherited bridge lemmas internally rather than reproducing every proof paragraph."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:one-level",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualOneLevelAssembly.actualSuccessor_yesUpper",
+      "EthInapproximability.V4.FiniteScaleAlignmentToOneLevel.actualSuccessor_noExactRobust_of_scaleAlignment_no_shallow",
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_shape_from_N"
+    ],
+    "classification": "assembled",
+    "note": "The positive bound, negative exact/robust conclusion, and carrier equations are separate theorems about one already-defined successor. The local negative wrapper's scale-alignment premise is discharged downstream; this link does not make it independently unconditional."
+  },
+  {
+    "paperId": "formal",
+    "label": "lem:seed-semantics",
+    "lean": [
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_exact",
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_robust",
+      "EthInapproximability.V4.FiniteFullCubeSeed.fullCubeSeedOutput_upper"
+    ],
+    "classification": "statement",
+    "note": "The fixed seed has the stated exact cost and robustness. Its positive bound is the equality weakened to an inequality. The claims are split into three Lean declarations."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:iteration-successor",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.nextState",
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.stateChain",
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.stateChain_succ",
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.yesBudgetAt_succ"
+    ],
+    "classification": "definition",
+    "note": "A single dependent recursion updates the actual matrix and its budget without consulting satisfiability."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:canonical-iteration",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_yes_induction_through",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_no_induction_through",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_yes_at_fixedK",
+      "EthInapproximability.V4.FiniteCanonicalSemanticInduction.canonical_no_at_fixedK"
+    ],
+    "classification": "assembled",
+    "note": "Lean proves two implications over the same chain rather than one combined theorem. Per-level hypotheses visible here are supplied in the later root assembly."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:actual-row-recurrence",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.inputAt_succ_rows",
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_rows"
+    ],
+    "classification": "statement",
+    "note": "This is the row-carrier identity for the actual recursively constructed matrix, not an unrelated size sequence."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:actual-col-recurrence",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalActualIteration.inputAt_succ_cols",
+      "EthInapproximability.V4.FiniteActualCarrierBounds.actualSuccessor_cols"
+    ],
+    "classification": "statement",
+    "note": "This is the column-carrier identity for the actual recursively constructed matrix, not an unrelated size sequence."
+  },
+  {
+    "paperId": "formal",
+    "label": "eq:majorant-quadratic",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualSizeMajorant.oneArrowMajorant_eq_quadratic",
+      "EthInapproximability.V4.FiniteActualSizeMajorant.oneArrowMajorant_le_twentySeven_mul_sq"
+    ],
+    "classification": "statement",
+    "note": "The explicit maximum reduces to the displayed quadratic and satisfies its stated upper bound for positive input."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:naming-width-induction",
+    "lean": [
+      "EthInapproximability.V4.FiniteActualSizeMajorant.actualPublicInputChain_seedMatrixBits_le",
+      "EthInapproximability.V4.FiniteCanonicalModerateSeedSize.exists_formulaIndependentCanonicalModerateSeed_matrixBits_le"
+    ],
+    "classification": "assembled",
+    "note": "The generic width induction is followed by a canonical-source cutoff theorem. Together they connect the numerical bound to the same level-k matrices used by the gap proof."
+  },
+  {
+    "paperId": "formal",
+    "label": "thm:finite-main",
+    "lean": [
+      "EthInapproximability.V4.FiniteCanonicalExternalBalancednessRoot.canonical_fixedK_sameMatrix_root_of_realLogSource",
+      "EthInapproximability.V4.FiniteRootStatement.FiniteRootSpecFor",
+      "EthInapproximability.V4.FiniteRootStatement.GapConclusion",
+      "EthInapproximability.V4.FiniteRootStatement.MatrixEntryConclusion"
+    ],
+    "classification": "assembled",
+    "note": "This is the public-conclusion correspondence: real-log source assumptions, one nonempty family, SAT-existential and UNSAT-universal exact gap, and the same-matrix entry bound. The formal proof may use a different internal decomposition. It remains conditional on the explicitly external source and balanced-family inputs."
+  },
+  {
+    "paperId": "formal",
+    "label": "sec:evidence",
+    "lean": [],
+    "classification": "context",
+    "note": "Verification policy and dated evidence belong in the inspector's provenance view, not as a mathematical theorem node. Link the actual build and axiom receipts separately. Running time, materialization, approximation, and the ETH consequence are outside the finite result."
+  }
+]

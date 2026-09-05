@@ -1,0 +1,10 @@
+{
+  "name": "v4-lean-paper-inspector",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "python build_site.py",
+    "dev": "python -m http.server 8764 --bind 127.0.0.1 --directory dist",
+    "test": "python -B test_site.py && node --check trace.js"
+  }
+}
