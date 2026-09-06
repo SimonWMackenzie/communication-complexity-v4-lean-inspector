@@ -7,8 +7,18 @@ import shutil
 
 ROOT = Path(__file__).resolve().parent
 
+FAVICON = (
+    'data:image/svg+xml,'
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+    "%3Crect width='32' height='32' rx='7' fill='%230e1218'/%3E"
+    "%3Crect x='5.5' y='6' width='9' height='9' rx='2' fill='none' stroke='%234bbf73' stroke-width='2'/%3E"
+    "%3Crect x='17.5' y='17' width='9' height='9' rx='2' fill='none' stroke='%23e0a458' stroke-width='2' stroke-dasharray='3 2'/%3E"
+    "%3Cpath d='M14.5 10.5h5a2 2 0 0 1 2 2v4.5' fill='none' stroke='%23a78bfa' stroke-width='2' stroke-linecap='round'/%3E"
+    "%3C/svg%3E"
+)
+
 def transform(template):
-    template = template.replace('</head>', '<link rel="stylesheet" href="trace.css">\n<link rel="stylesheet" href="design.css">\n</head>')
+    template = template.replace('</head>', '<link rel="stylesheet" href="trace.css">\n<link rel="stylesheet" href="design.css">\n<link rel="icon" href="' + FAVICON + '">\n<meta name="theme-color" content="#0e1218">\n</head>')
     template = template.replace('saved<=180', 'saved<=200').replace('scale>=180', 'scale>=200').replace('Math.min(180,scale+10)', 'Math.min(200,scale+10)')
     template = template.replace('function applyScale(){', 'function applyScale(){document.documentElement.classList.toggle("large-text",scale>=150);')
     template = template.replace('Communication complexity / V4', 'Communication complexity')
@@ -26,7 +36,12 @@ def transform(template):
     if old not in template:
         raise ValueError('Original inspector bootstrap changed')
     template = template.replace(old, new, 1)
-    template = template.replace('<div id="fatal"', '<div id="load-proof" class="trace-loading" role="status">Loading the paper and compiled proof index...</div>\n<div id="fatal"')
+    template = template.replace('<div id="fatal"', '<div id="load-proof" class="trace-loading" role="status">Loading the paper and compiled proof index…</div>\n<div id="fatal"')
+    # e.target is only guaranteed to be an EventTarget: a keydown dispatched on
+    # document or window has no matches(), and the page threw on every load.
+    guard = 'const typing=e.target.matches('
+    if guard in template:
+        template = template.replace(guard, 'const typing=e.target instanceof Element&&e.target.matches(')
     template = template.replace('catch (error) { $("workspace").hidden', 'catch (error) { $("load-proof").hidden = true; $("workspace").hidden', 1)
     template = template.replace("This inspector has not been built, or its embedded data is invalid. Rebuild it with the repository's inspector builder. Details:", 'The proof index could not be opened. Reload the page or try a current browser. Details:')
     old_end = 'applyScale();fillFilters();renderIntro();renderNavigation();selectDeclaration((declarationFromLocation()||root).id,"statement",false);'

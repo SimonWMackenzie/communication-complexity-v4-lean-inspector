@@ -230,3 +230,58 @@ status bar is one 42px line, the canvas is 461px, `scrollHeight` equals
 header is 193px (was 275px), the canvas is 320px with all 14 steps drawn, and
 the footer starts below the canvas instead of over it. At 390x844 and at 200%
 text there is no page-level horizontal overflow in any of the three views.
+
+## Polish revision
+
+A full QA pass over the three views. The findings that changed behaviour:
+
+**The paper tracer got the graph view's shell.** `.paper-layout` sized itself
+with `calc(100vh - 12rem)`, a guess of 192px of chrome against an actual 368px,
+so above 1250px the footer sat below the fold and the document grew a scrollbar
+of its own. `#paper-workspace` is a flex column now and the reading area takes
+what the header and footer leave; the clamp is released on the same terms as the
+graph's, plus at the 1250px width where the three columns become two rows.
+
+**The phone header is a fifth of what it was.** Six wrapped rows of controls
+came to 446px of an 812px screen. The identity and the three view pills stay;
+the search, arrows, text size, proof-index download, verification record, help
+and navigation toggle fold into one `More` disclosure that opens as a panel over
+the page, and the counts became a single horizontal strip.
+
+**Shared list rows are shared everywhere.** `.graph-paper-link` — the header
+dropdown, the complete node list and the aside lists — was missing the `.meta`
+and origin-tick rules the Lean navigation and the paper index already had, so
+its titles and metadata ran together and its provenance colour was absent.
+
+**The console is clean on load.** The offline template's document keydown
+handler called `e.target.matches(...)` unguarded, and `e.target` is only an
+`EventTarget`: a keydown dispatched on `document` or `window` threw. The builder
+patches the guard in, as it already does for the trace and graph handlers.
+
+**Chrome the drawing was paying for.** The footer is one 29px row with an inline
+link instead of two rows with a duplicate button; the source-controls fold into a
+`<details>` whose state is remembered for the session; the complete node list
+moved into the foot of the aside; and the canvas hint fades after seven seconds
+or the first interaction and gives its band back.
+
+Also: Lean identifiers break at `.` and `_` in `#selected-title` and card
+headings rather than mid-token; singular and plural agree in every count;
+the skip link resolves to the open view; focus rings on full-bleed rows and on
+trimmed paper highlights are drawn inside the element that clips them; the
+header dropdown is a real combobox (Escape, outside click, arrow keys, Enter);
+repeated button triples are named groups; provenance keys are labelled;
+`prefers-reduced-motion` is a blanket rule and printing keeps the code, badges,
+footer note and the proof map itself legible in black on white.
+
+Terminology: the root is the **main theorem**, the Lean view is the **Lean
+inspector**, the graph pill is the **proof map** (the deeper view is still the
+dependency explorer), US spelling in site prose, `·` between a paper and its
+label, and unspaced em dashes.
+
+Measured after the pass, at 1440x900: paper and graph views both have
+`scrollHeight === innerHeight`; the curated canvas is 567px and the source
+canvas 346px open / 484px folded, with no workspace scrollbar in either; the
+footer is 29px. At 375x812 the header is 169px in all three views with no
+horizontal overflow. At 200% text the canvas is exactly 70vh. The clip-aware
+highlight overlap probe is 0 on both papers, mapped and unmapped, and the
+selected highlight's border box still equals its recorded coordinates.

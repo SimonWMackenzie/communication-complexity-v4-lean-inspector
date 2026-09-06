@@ -8,11 +8,15 @@
   /* One colour per classification, shared by the page highlights, the index
    * ticks and the key above the page stack. */
   const tint = {statement:'var(--hl-statement)',definition:'var(--hl-statement)',assembled:'var(--hl-assembled)',external:'var(--hl-external)',unmapped:'var(--hl-unmapped)',context:'var(--hl-context)'};
-  const keyRows = [['statement','statement / definition','Statement or definition correspondence'],['assembled','assembled proof','Proved through several Lean results'],['external','external input','An external mathematical input — not proved in Lean'],['unmapped','no correspondence','No curated Lean correspondence'],['context','context','Context / evidence']];
+  const keyRows = [['statement','statement / definition','Statement or definition correspondence'],['assembled','assembled proof','Proved through several Lean results'],['external','external input','An external mathematical input—not proved in Lean'],['unmapped','no correspondence','No curated Lean correspondence'],['context','context','Context / evidence']];
   const originTint = {'this-paper':'var(--proved)',companion:'var(--reused)','earlier-route':'var(--def)',library:'var(--faint)'};
   const originText = {'this-paper':'Proved in Lean in this paper.',companion:'Reused from the companion paper’s Lean formalization (vendored npcc-lean module).','earlier-route':'Reused from an earlier route in this repository (ParameterizedNP).',library:'Library declaration (Mathlib / Lean core).'};
   const originName = {'this-paper':'This paper',companion:'Companion paper',"earlier-route":'Earlier route',library:'Library'};
   const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n; };
+  /* "1 paper locations" is a bug in the copy, not a rounding detail. */
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+  /* Site prose is US-spelled; the recorded paper titles are not edited. */
+  const paperOptionLabel = paper => paper.id === 'formal' ? 'Formalization-facing paper' : paper.id === 'reader' ? 'Reader-facing paper' : paper.title;
   const button = (text, fn, cls) => {const b=el('button',cls,text);b.type='button';b.addEventListener('click',fn);return b;};
   const $ = id => document.getElementById(id);
   function alignSelectedLocation(){
@@ -34,11 +38,28 @@
     /* Every view has a pressed top-bar button: the Lean view is entered through
      * "Main theorem", so that button reports the current view too. */
     $('show-root').setAttribute('aria-pressed',String(next==='lean'));
+    aimSkipLink(next);
     document.dispatchEvent(new CustomEvent('v4-view-changed',{detail:{mode:next}}));
     /* The paper workspace may have been hidden, in which case the earlier
      * alignment was a no-op against a zero-height frame. Align once now that
      * layout exists, and again on the next frame after the images settle. */
     if(next==='paper'&&selectedAnchor){replaceHash(selectedAnchor);alignSelectedLocation();requestAnimationFrame(alignSelectedLocation);}
+  }
+  /* #main-content lives inside #workspace, which is hidden in the paper and
+   * graph views, so the one fixed skip target resolved into a hidden element in
+   * two views out of three. It follows the open view instead. */
+  const SKIP_TARGET={graph:'graph-canvas',paper:'paper-scroll',lean:'main-content'};
+  function aimSkipLink(next){
+    const link=document.querySelector('.skip-link');if(!link)return;
+    const target=SKIP_TARGET[next]||'main-content';
+    link.dataset.target=target;link.setAttribute('href','#'+target);link.textContent='Skip to content';
+  }
+  function skipToContent(event){
+    const link=event.currentTarget,target=$(link.dataset.target||'main-content');
+    if(!target)return;
+    event.preventDefault();
+    if(!target.hasAttribute('tabindex'))target.tabIndex=-1;
+    target.focus({preventScroll:true});target.scrollIntoView({block:'start'});
   }
   function replaceHash(anchor) {try{history.replaceState(null,'','#'+new URLSearchParams({paper:anchor.paperId,anchor:anchor.label}));}catch(_){}}
   function defaultAnchor(paper) {return trace.anchors.find(a=>a.paperId===paper&&(a.label==='thm:reader-main'||a.label==='thm:finite-main'))||trace.anchors.find(a=>a.paperId===paper);}
@@ -86,7 +107,7 @@
       for(const anchor of trace.anchors.filter(a=>a.paperId===id))for(const rect of anchor.rectangles.filter(r=>r.page===page.page)){
         const b=button('',()=>selectAnchor(anchor.id,false),'paper-highlight '+anchor.classification);b.dataset.anchor=anchor.id;
         b.style.left=(100*rect.x0)+'%';b.style.top=(100*rect.y0)+'%';b.style.width=(100*(rect.x1-rect.x0))+'%';b.style.height=(100*(rect.y1-rect.y0))+'%';
-        b.setAttribute('aria-label',anchor.title+' — '+kindText[anchor.classification]);b.title=anchor.title+'\n'+kindText[anchor.classification];plane.append(b);
+        b.setAttribute('aria-label',anchor.title+'—'+kindText[anchor.classification]);b.title=anchor.title+'\n'+kindText[anchor.classification];plane.append(b);
         boxes.push({anchor,rect,button:b});
       }
       separateHighlights(boxes);
@@ -108,8 +129,8 @@
     const anchors=trace.anchors.filter(a=>a.paperId===activePaper.id&&(all||a.lean.length)&&query.every(s=>(a.title+' '+a.label+' '+a.note+' '+a.lean.join(' ')).toLowerCase().includes(s)));
     const list=$('paper-index-list');list.replaceChildren();
     for(const a of anchors){const b=button(a.title,()=>selectAnchor(a.id),'trace-index-item');b.dataset.anchor=a.id;b.dataset.classification=a.classification;b.style.setProperty('--tick',tint[a.classification]||'var(--hl-unmapped)');b.setAttribute('aria-current',String(selectedAnchor?.id===a.id));b.append(el('span','meta','Page '+a.page+' · '+kindText[a.classification]));list.append(b);}
-    if(!anchors.length)list.append(el('p','paper-empty','No matching paper locations.'));
-    $('trace-index-count').textContent=anchors.length+' paper locations';
+    if(!anchors.length)list.append(el('p','paper-empty','No matching paper locations. Try a shorter name or another page.'));
+    $('trace-index-count').textContent=plural(anchors.length,'paper location','paper locations');
   }
   function filterHighlights(){const all=$('trace-unmapped').checked;for(const b of document.querySelectorAll('.paper-highlight.unmapped,.paper-highlight.context'))b.hidden=!all;}
   const provFields=[['statedBy','Stated by'],['lean','In Lean'],['entersRoot','Enters the root'],['intendedSource','Intended source']];
@@ -138,10 +159,11 @@
     const related=el('section');related.append(el('h3',null,anchor.lean.length?'Corresponding Lean source':'Correspondence not yet curated'));
     for(const name of anchor.lean){
       const d=api.byId.get(name),card=el('article','trace-lean-item'),origin=window.V4Origin?window.V4Origin(d):null;
+      card.setAttribute('role','group');card.setAttribute('aria-label',name);
       if(origin)card.style.setProperty('--tick',originTint[origin]);
       card.append(el('div','mono',name));
       if(d.plainEnglish)card.append(el('p',null,typeof d.plainEnglish==='string'?d.plainEnglish:JSON.stringify(d.plainEnglish)));
-      if(origin){const line=el('div','origin-line'),dot=el('span','origin-tick');dot.style.setProperty('--tick',originTint[origin]);line.append(dot,el('span',null,originName[origin]+' — '+originText[origin]));card.append(line);}
+      if(origin){const line=el('div','origin-line'),dot=el('span','origin-tick');dot.style.setProperty('--tick',originTint[origin]);line.append(dot,el('span',null,originName[origin]+'—'+originText[origin]));card.append(line);}
       const actions=el('div','trace-lean-actions');actions.append(button('Definition card',()=>api.openDeclarationCard(name)),button('Statement',()=>openLean(name,'statement')),button('Full source and proof',()=>openLean(name,'source')),button('References',()=>openLean(name,'dependencies')));card.append(actions);related.append(card);}
     host.append(related);
     const other=trace.anchors.filter(a=>a.paperId!==anchor.paperId&&a.lean.some(n=>anchor.lean.includes(n)));
@@ -149,10 +171,10 @@
     const source=el('details');source.append(el('summary',null,'Location and provenance'));api.renderValue({paperLabel:anchor.label,physicalPdfPage:anchor.page,printedPage:anchor.printedPage,pdfDestination:anchor.destination,compiledDestinationPage:anchor.compiledDestinationPage,locationVerification:anchor.locationVerification,source:anchor.source,pdfSha256:activePaper.pdfSha256,auxSha256:activePaper.auxSha256},source);host.append(source);
     if(api.DATA.meta.paperRevision)source.append(el('p','trace-tooltip',api.DATA.meta.paperRevision.notice));
     host.append(el('p','trace-tooltip','Highlights mark the beginning/location of a labelled statement or equation. They do not delimit a whole proof. Where two recorded location boxes overlap, the upper box is trimmed at the next box\'s top edge for display; the recorded coordinates are unchanged. Paper-to-Lean correspondence is curated; compiler-derived references remain available in the Lean view.'));
-    const a=el('a',null,'Open the original PDF (selectable and searchable text)');a.href=activePaper.pdf;a.target='_blank';a.rel='noopener';host.append(a);
+    const a=el('a',null,'Open the original PDF (selectable and searchable text)');a.href=activePaper.pdf;a.target='_blank';a.rel='noopener noreferrer';host.append(a);
   }
   function openLean(id,tab='statement'){setMode('lean');api.selectDeclaration(id,tab);$('main-content').scrollIntoView({block:'start'});}
-  function addLinks(d,host){if(!api||!d.traceAnchors?.length)return;const links=el('div','trace-source-links');links.append(el('span','trace-links-label','Trace this declaration in the papers'));for(const id of d.traceAnchors){const a=byAnchor.get(id);if(a)links.append(button((a.paperId==='reader'?'Reader: ':'Formal: ')+a.title,()=>selectAnchor(id)));}host.append(links);}
+  function addLinks(d,host){if(!api||!d.traceAnchors?.length)return;const links=el('div','trace-source-links');links.append(el('span','trace-links-label','Trace this declaration in the papers'));for(const id of d.traceAnchors){const a=byAnchor.get(id);if(a)links.append(button((a.paperId==='reader'?'Reader · ':'Formal · ')+a.title,()=>selectAnchor(id)));}host.append(links);}
   function applyZoom(){if(!$('paper-stack'))return;for(const p of $('paper-stack').children){p.style.width=zoom+'%';p.style.maxWidth=zoom===100?'1050px':'none';}$('trace-zoom-value').textContent=zoom+'%';}
   function fromHash(){const p=new URLSearchParams(location.hash.slice(1));if(p.has('anchor')){const a=byAnchor.get(p.get('paper')+':'+p.get('anchor'));if(a){selectAnchor(a.id);return true;}}if(p.has('decl')){setMode('lean');return true;}return false;}
   /* The three detail panels open the same way: eyebrow, title, kind badge,
@@ -169,17 +191,22 @@
     api=event.detail;orderSelectedHead();trace=api.DATA.trace;if(!trace)return;
     for(const a of trace.anchors)byAnchor.set(a.id,a);for(const p of trace.papers)byPaper.set(p.id,p);
     const main=el('section');main.id='paper-workspace';main.hidden=true;
-    const toolbar=el('div','trace-toolbar'),paper=el('select');paper.id='trace-paper';paper.setAttribute('aria-label','Choose manuscript');for(const p of trace.papers){const o=el('option',null,p.title);o.value=p.id;paper.append(o);}paper.addEventListener('change',()=>showPaper(paper.value));
+    const toolbar=el('div','trace-toolbar'),paper=el('select');paper.id='trace-paper';paper.setAttribute('aria-label','Choose manuscript');paper.title='Which of the two manuscripts is shown in the reading area';for(const p of trace.papers){const o=el('option',null,paperOptionLabel(p));o.value=p.id;paper.append(o);}paper.addEventListener('change',()=>showPaper(paper.value));
     const pageLabel=el('label',null,'Page '),page=el('input');page.id='trace-page';page.type='number';page.min='1';page.value='1';page.setAttribute('aria-label','PDF page');pageLabel.append(page);const total=el('span');total.id='trace-page-total';pageLabel.append(total);
     const go=()=>{const n=Math.max(1,Math.min(activePaper.pages.length,Number(page.value)||1));page.value=n;const target=$('paper-page-'+n),frame=$('paper-scroll');frame.scrollTo({top:frame.scrollTop+target.getBoundingClientRect().top-frame.getBoundingClientRect().top,behavior:'instant'});};page.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
     const zoomValue=el('output');zoomValue.id='trace-zoom-value';
     const zoomGroup=el('div','control-group zb');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Page zoom');
     /* "Fit width" is the zoom's reset, so it sits inside the pill as a fourth
      * child, the way the top bar's text-size reset does. */
-    zoomGroup.append(button('−',()=>{zoom=Math.max(60,zoom-10);applyZoom();}),zoomValue,button('+',()=>{zoom=Math.min(200,zoom+10);applyZoom();}),button('Fit width',()=>{zoom=100;applyZoom();}));
+    /* The accessible NAME of these two stays "−" and "+" — a test matches them
+     * by that exact name — so the explanation is a description, via title. */
+    const zoomOut=button('−',()=>{zoom=Math.max(60,zoom-10);applyZoom();});zoomOut.title='Zoom out';
+    const zoomIn=button('+',()=>{zoom=Math.min(200,zoom+10);applyZoom();});zoomIn.title='Zoom in';
+    const zoomFit=button('Fit width',()=>{zoom=100;applyZoom();});zoomFit.title='Fit the drawing to the panel width';
+    zoomGroup.append(zoomOut,zoomValue,zoomIn,zoomFit);
     const zoomBar=el('div','zoombar');zoomBar.append(zoomGroup);
     /* The classification key: what a highlight's colour means. */
-    const key=el('div','tkey');key.setAttribute('aria-label','Highlight colour key');
+    const key=el('div','tkey');key.setAttribute('aria-label','Highlight color key');
     for(const [cls,text,title]of keyRows){const k=el('span','k is-'+cls),swatch=el('span','kb');swatch.style.setProperty('--tick',tint[cls]);k.title=title;k.append(swatch,el('span',null,text));key.append(k);}
     const pageBox=el('div','trace-pagebox');pageBox.append(pageLabel,button('Go',go));
     toolbar.append(paper,pageBox,key,el('span','trace-spacer'),zoomBar,button('Selected statement ↓',()=>{$('paper-detail').scrollIntoView({block:'start'});},'trace-mobile-detail'),button('Lean inspector',()=>openLean(api.DATA.root)));
@@ -188,6 +215,7 @@
     const scroll=el('div','paper-scroll');scroll.id='paper-scroll';const stack=el('div','paper-stack');stack.id='paper-stack';scroll.append(stack);const detail=el('aside','paper-detail');detail.id='paper-detail';detail.setAttribute('aria-live','polite');layout.append(index,scroll,detail);main.append(toolbar,layout);$('workspace').before(main);
     const top=button('📄 Trace the paper',()=>{setMode('paper');if(!selectedAnchor)showPaper('reader');});top.id='open-paper-trace';top.title='Read the papers with every formalized statement highlighted';document.querySelector('.toolbar').prepend(top);
     for(const id of ['show-root','intro-root','show-provenance'])$(id).addEventListener('click',()=>setMode('lean'));
+    const skip=document.querySelector('.skip-link');if(skip)skip.addEventListener('click',skipToContent);
     window.addEventListener('hashchange',fromHash);
     new ResizeObserver(()=>requestAnimationFrame(alignSelectedLocation)).observe($('paper-scroll'));
     document.addEventListener('v4-declaration-selected',()=>setMode('lean'));

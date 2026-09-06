@@ -28,6 +28,21 @@
   const svgEl=(tag,attrs={})=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
   const short=id=>id.split('.').slice(-2).join('.');
   const count=n=>n.toLocaleString('en-GB');
+  /* "1 DECLARATIONS" and "1 cards reached" are bugs in the copy. */
+  const plural=(n,one,many)=>count(n)+' '+(n===1?one:many);
+  /* A Lean identifier breaks where the NAME breaks: after a '.' or a '_'. The
+   * same rule the graph aside uses, applied to any heading that carries one. */
+  function wbrify(node){
+    if(!node||node.dataset.wbr==='1')return;
+    const text=node.textContent;
+    node.dataset.wbr='1';
+    if(!text||!/[._]/.test(text))return;
+    const parts=[];let piece='';
+    for(const ch of text){piece+=ch;if(ch==='.'||ch==='_'){parts.push(piece);piece='';}}
+    if(piece)parts.push(piece);
+    node.replaceChildren();
+    parts.forEach((part,i)=>{node.append(document.createTextNode(part));if(i<parts.length-1)node.append(document.createElement('wbr'));});
+  }
 
   /* ------------------------------------------------------------------ *
    * The provenance model                                                *
@@ -52,7 +67,7 @@
       short:'Library declaration (Mathlib / Lean core).',
       sentence:'A library declaration (Mathlib, Lean core or Batteries). Not authored for either paper.'},
     external:{name:'External input',mark:'EXTERNAL INPUT',colour:'var(--axiom)',
-      short:'An external mathematical input — not proved in Lean.',
+      short:'An external mathematical input—not proved in Lean.',
       sentence:'An external mathematical input. No Lean proof in this project establishes it; it enters the root theorem as an explicit hypothesis.'}
   };
   /* The module decides. `_private.` prefixes occur in declaration names, never
@@ -71,6 +86,7 @@
   const nodeTick=node=>({'this-paper':'var(--proved)','external-companion':'var(--axiom)','external-this-paper':'var(--axiom)',result:'var(--headline)'})[nodeOrigin(node)];
 
   let api,g,map,viewMode='overview',focus,selected,view,zoom=1,pathIds=null,svgSize,sequence=0,closure,originTotals;
+  let closeTopSearch=()=>{};
   const options={direction:'out',depth:2,limit:80,libraries:false,grouped:true};
   const originShown={'this-paper':true,'earlier-route':true,companion:true,library:false};
   const companionCache=new Map();
@@ -124,7 +140,7 @@
     hint.replaceChildren(document.createTextNode(lines[0]),el('br'),document.createTextNode(lines[1]));
   }
   function switchView(next){
-    viewMode=next;$('graph-mode').value=next;$('source-controls').hidden=next!=='source';
+    viewMode=next;$('graph-mode').value=next;$('source-controls-box').hidden=next!=='source';
     setHint(next);
     /* The caption is a status-bar line now, not a heading paragraph: it names
      * the relation the arrows draw and nothing else. What the view is for is
@@ -164,7 +180,7 @@
   function originLine(origin,module,host){
     const line=el('div','origin-line'),dot=el('span','origin-tick');
     dot.style.setProperty('--tick',ORIGINS[origin].colour);
-    line.append(dot,el('span',null,ORIGINS[origin].name+' — '+originSentence(origin,module)));
+    line.append(dot,el('span',null,ORIGINS[origin].name+'—'+originSentence(origin,module)));
     host.append(line);return line;
   }
 
@@ -179,7 +195,7 @@
     if(prose)host.append(el('p',null,prose));
     host.append(el('p','graph-detail-note'+(origin==='companion'?' is-companion':''),G.isTerminal(d)?'This is a terminal reference card: its standalone source body is not embedded. That does not mean it has no mathematical dependencies.':'A source-indexed declaration. Its exact statement, surrounding definitions and available axiom evidence are in the Lean inspector.'));
     const counts=el('div','graph-stat-row');
-    counts.append(el('span',null,g.out.get(id).length+' outgoing references'),el('span',null,g.incoming.get(id).length+' incoming references'));host.append(counts);
+    counts.append(el('span',null,plural(g.out.get(id).length,'outgoing reference','outgoing references')),el('span',null,plural(g.incoming.get(id).length,'incoming reference','incoming references')));host.append(counts);
     const actions=el('div','graph-actions');
     actions.append(btn('Explore from here',()=>{focus=id;pathIds=null;options.grouped=false;$('graph-grouped').checked=false;render();}),
       btn('Open statement',()=>window.V4Trace.openLean(id,'statement')),
@@ -203,7 +219,7 @@
     host.append(el('div','eyebrow',map.originCaptions[origin]),el('h2',null,n.title));
     const badges=el('div','badges');
     if(n.external){originBadge('external',badges);badges.append(el('span','badge o-'+(origin==='external-companion'?'companion':'this-paper'),origin==='external-companion'?'INTENDED SOURCE · COMPANION PAPER':'PROVED ON PAPER · THIS PAPER'));}
-    else if(origin==='result'){badges.append(el('span','badge o-result','ROOT THEOREM'),el('span','badge o-external','CONDITIONAL'));}
+    else if(origin==='result'){badges.append(el('span','badge o-result','MAIN THEOREM'),el('span','badge o-external','CONDITIONAL'));}
     else originBadge('this-paper',badges);
     host.append(badges,el('p',null,n.summary));
     if(n.external)host.append(el('p','graph-detail-note is-external','The paper supplies or cites this mathematical input. The linked Lean declarations state or consume its contract; they do not prove its existence.'));
@@ -212,6 +228,9 @@
     host.append(el('h3',null,'Lean components'));
     for(const name of n.lean){
       const d=g.cards.get(name),origin=d?originOf(d):'library',item=el('article','graph-component');
+      /* Three identically labelled buttons per component: the group they act on
+       * has to be named, or a screen reader hears "Open statement" nine times. */
+      item.setAttribute('role','group');item.setAttribute('aria-label',name);
       item.style.setProperty('--tick',ORIGINS[origin].colour);
       item.append(el('div','graph-full-name',name));
       const marks=el('div','badges');originBadge(origin,marks);if(d&&d.kind)marks.append(el('span','badge',d.kind));item.append(marks);
@@ -220,7 +239,7 @@
     }
     const reach=companionReach(n);
     if(reach.count){
-      host.append(el('h3',null,'Uses companion-paper Lean · '+reach.count));
+      host.append(el('h3',null,'Reaches companion-paper Lean · '+count(reach.count)));
       const note=el('p','graph-detail-note is-companion',n.companionNote||'Following compiler-recorded source references from this step’s Lean components reaches '+reach.count+' declarations of the companion paper’s vendored Lean formalization, in '+reach.modules.length+' modules. They are reused, not proved here.');
       host.append(note,el('p','graph-full-name',map.companionPaper.citation));
       const list=el('div','companion-modules');
@@ -254,10 +273,10 @@
     const host=$('graph-detail');host.replaceChildren();selected=node.id;
     const origin=originOf(g.cards.get(node.members[0]));
     host.append(el('div','eyebrow','Grouped source references · '+ORIGINS[origin].mark),leanHeading(short(node.id)));
-    const badges=el('div','badges');originBadge(origin,badges);badges.append(el('span','badge',node.members.length+' declarations'));host.append(badges);
+    const badges=el('div','badges');originBadge(origin,badges);badges.append(el('span','badge',plural(node.members.length,'declaration','declarations')));host.append(badges);
     host.append(el('p','graph-full-name',node.id));
     originLine(origin,node.id,host);
-    host.append(el('p',null,node.members.length+' reached declarations in this module. A grouped edge means that at least one declaration references a declaration in the other group. This is not a module-import edge.'));
+    host.append(el('p',null,plural(node.members.length,'reached declaration','reached declarations')+' in this module. A grouped edge means that at least one declaration references a declaration in the other group. This is not a module-import edge.'));
     const input=el('input');input.type='search';input.placeholder='Filter declarations in this group';input.setAttribute('aria-label','Filter grouped declarations');
     const list=el('div','graph-group-list'),draw=()=>{list.replaceChildren();const items=node.members.filter(id=>id.toLowerCase().includes(input.value.toLowerCase()));for(const id of items){const row=btn(short(id),()=>detailCard(id),'graph-paper-link is-lean');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);list.append(row);}};
     input.addEventListener('input',draw);host.append(input,list);draw();highlight(node.id);
@@ -269,6 +288,7 @@
     const list=el('div','graph-edge-evidence');
     for(const [source,target]of edge.pairs){
       const d=g.cards.get(source),item=el('article','graph-component'),to=originOf(g.cards.get(target));
+      item.setAttribute('role','group');item.setAttribute('aria-label',source+' → '+target);
       item.style.setProperty('--tick',ORIGINS[to].colour);
       item.append(el('p','graph-full-name',source+' → '+target));
       const marks=el('div','badges');marks.append(el('span','badge o-'+originOf(d),ORIGINS[originOf(d)].mark),el('span','faint','→'),el('span','badge o-'+to,ORIGINS[to].mark));item.append(marks);
@@ -355,7 +375,7 @@
     for(const node of nodes){
       const p=layout.positions.get(node.id);
       const origin=overview?nodeClass(node):'o-'+originOf(g.cards.get(node.members[0]));
-      const group=svgEl('g',{class:'proof-node '+origin+(overview&&node.external?' external':'')+(overview&&node.id==='result'?' conclusion':'')+(node.id===selected?' selected':''),transform:'translate('+p.x+','+p.y+')',tabindex:0,role:'button','aria-label':overview?node.title+' — '+map.originCaptions[nodeOrigin(node)]:node.label});
+      const group=svgEl('g',{class:'proof-node '+origin+(overview&&node.external?' external':'')+(overview&&node.id==='result'?' conclusion':'')+(node.id===selected?' selected':''),transform:'translate('+p.x+','+p.y+')',tabindex:0,role:'button','aria-label':overview?node.title+'—'+map.originCaptions[nodeOrigin(node)]:node.label});
       group.dataset.graphNode=node.id;
       group.append(svgEl('rect',{class:'card',width:p.width,height:p.height,rx:8}));
       const title=svgEl('title');title.textContent=overview?node.title+'\n'+map.originCaptions[nodeOrigin(node)]:node.label;group.append(title);
@@ -379,8 +399,10 @@
   function applyZoom(){const svg=$('graph-canvas').querySelector('svg');if(!svg||!svgSize)return;svg.style.width=svgSize.width*zoom+'px';svg.style.height=svgSize.height*zoom+'px';$('graph-zoom').textContent=Math.round(zoom*100)+'%';}
   function fit(){if(!svgSize)return;zoom=Math.max(.4,Math.min(1,($('graph-canvas').clientWidth-24)/svgSize.width));applyZoom();}
   function findPath(id){
+    /* A zero-edge "path" is not a path; say what is actually true. */
+    if(id===g.root){$('graph-message').textContent='You are already at the main theorem.';detailCard(id);return;}
     const p=G.path(g,g.root,id);if(!p){$('graph-message').textContent='No recorded source-reference path from the main theorem to this name. This does not establish mathematical independence.';return;}
-    viewMode='source';$('graph-mode').value='source';$('source-controls').hidden=false;focus=g.root;pathIds=p;selected=id;render();$('graph-message').textContent='A shortest recorded-reference path: '+(p.length-1)+' edges. It is not a kernel proof-term trace.';detailCard(id);
+    viewMode='source';$('graph-mode').value='source';$('source-controls-box').hidden=false;focus=g.root;pathIds=p;selected=id;render();$('graph-message').textContent='A shortest recorded-reference path: '+(p.length-1)+' edges. It is not a kernel proof-term trace.';detailCard(id);
   }
   function originSummary(ids,host){
     const totals=originCounts(ids);
@@ -397,7 +419,7 @@
     if(viewMode==='overview'){
       const positions=new Map(map.nodes.map(n=>[n.id,{x:24+n.lane*LANE,y:36+n.level*ROW,width:NODE_W,height:NODE_H}]));
       drawGraph(map.nodes,map.edges,{positions,width:24+2*LANE+NODE_W+24,height:36+8*ROW+NODE_H+40},true);
-      counter.append(document.createTextNode(map.nodes.length+' mathematical steps · '+map.edges.length+' curated arrows · 2 external inputs, both named'));
+      counter.append(document.createTextNode(plural(map.nodes.length,'mathematical step','mathematical steps')+' · '+plural(map.edges.length,'curated arrow','curated arrows')+' · 2 external inputs, both named'));
       for(const n of map.nodes){const row=btn(n.title,()=>detailOverview(n.id),'graph-paper-link');row.dataset.origin=nodeOrigin(n);row.style.setProperty('--tick',nodeTick(n));listing.append(row);}
       detailOverview(map.nodes.some(n=>n.id===selected)?selected:'result');
     }else{
@@ -417,7 +439,7 @@
       view={nodes,edges,allEdges,eligible,edgePairs,reached:raw.reached,groupCount:groups.length,grouped:raw.grouped,hiddenEdges:allEdges.length-edges.length,filteredCards:raw.reached-eligible.length};
       drawGraph(nodes,edges,G.layout(nodes,{width:300,height:96}),false);
       $('graph-focus').textContent=focus;
-      counter.append(document.createTextNode('Showing '+nodes.length+' of '+groups.length+(raw.grouped?' module groups':' cards')+' · '+edges.length+' visible / '+allEdges.length+(raw.grouped?' eligible grouped arrows':' eligible edges')+' · '+edgePairs.length+' declaration-reference pairs (including within groups) · '+raw.reached+' cards reached · '+(raw.reached-eligible.length)+' cards filtered out'));
+      counter.append(document.createTextNode('Showing '+count(nodes.length)+' of '+(raw.grouped?plural(groups.length,'module group','module groups'):plural(groups.length,'card','cards'))+' · '+count(edges.length)+' visible / '+(raw.grouped?plural(allEdges.length,'eligible grouped arrow','eligible grouped arrows'):plural(allEdges.length,'eligible edge','eligible edges'))+' · '+plural(edgePairs.length,'declaration-reference pair','declaration-reference pairs')+' (including within groups) · '+plural(raw.reached,'card reached','cards reached')+' · '+plural(raw.reached-eligible.length,'card filtered out','cards filtered out')));
       originSummary(eligible,counter);
       for(const id of eligible){const row=btn(short(id),()=>detailCard(id),'graph-paper-link is-lean'),origin=originOf(g.cards.get(id));row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);listing.append(row);}
       const full=g.cards.get(selected)?selected:focus;detailCard(full);
@@ -428,8 +450,9 @@
     const payload=viewMode==='overview'?map:{relation:'compiler-recorded source references',focus,options,originShown,pathIds,eligibleDeclarations:view.eligible,edges:view.edgePairs,displayedNodes:view.nodes.map(n=>n.id),hiddenEdges:view.hiddenEdges};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=el('a');a.href=URL.createObjectURL(blob);a.download=viewMode==='overview'?'mathematical-proof-map.json':'source-reference-neighborhood.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   }
-  function selectControl(id,label,values,value,action){
+  function selectControl(id,label,values,value,action,title){
     const wrap=el('label','graph-control',label+' '),select=el('select');select.id=id;
+    if(title){select.title=title;wrap.title=title;}
     for(const [v,text]of values){const o=el('option',null,text);o.value=String(v);select.append(o);}select.value=String(value);select.addEventListener('change',()=>action(select.value));wrap.append(select);return wrap;
   }
 
@@ -456,31 +479,75 @@
     brand.append(caveat);
 
     const modes=pill('modes');modes.setAttribute('role','group');modes.setAttribute('aria-label','View');
-    $('show-root').textContent='Lean source';$('show-root').title='Read the exact Lean declarations and their recorded references';
+    $('show-root').textContent='Lean inspector';$('show-root').title='Read the exact Lean declarations and their recorded references';
     $('open-paper-trace').textContent='📄 Papers';
     $('show-provenance').textContent='Verification';$('show-provenance').title='The verification record: proof snapshot, published logs and the audited axiom footprint';
     modes.append($('open-proof-map'),$('show-root'),$('open-paper-trace'));
     const routes=pill('routes','arrows');routes.setAttribute('role','group');routes.setAttribute('aria-label','Which arrows the graph draws');
+    routes.title='Which relation the proof map draws: the curated mathematical dependence between steps of the papers, or the compiler-recorded source references between Lean declarations';
     const curated=btn('curated',()=>open('overview'));curated.id='route-curated';curated.title='Arrows are the curated mathematical dependence between steps of the papers';
     const source=btn('source',()=>open('source'));source.id='route-source';source.title='Arrows are compiler-recorded source references between Lean declarations';
     routes.append(curated,source);
 
     const scale=document.querySelector('.scale-controls');scale.classList.add('uical');scale.prepend(el('span','ul','UI size'));
+    $('show-help').title='What each of the three views shows, and the keyboard shortcuts';
+    $('show-help').setAttribute('aria-label','How to use the papers, proof map and Lean inspector');
+    if($('intro-root'))$('intro-root').textContent='Inspect the main theorem';
 
     const download=proofIndexButton();
 
     const search=el('div','searchbox');
     const input=el('input');input.id='top-search';input.type='search';input.autocomplete='off';input.spellcheck=false;
     input.placeholder='step, lemma, p.11…';input.setAttribute('aria-label','Search steps, paper locations and Lean declarations');
-    const results=el('div','results');results.hidden=true;
+    const results=el('div','results');results.id='top-search-results';results.hidden=true;
+    results.setAttribute('role','listbox');results.setAttribute('aria-label','Search results');
+    input.setAttribute('role','combobox');input.setAttribute('aria-expanded','false');
+    input.setAttribute('aria-controls','top-search-results');input.setAttribute('aria-autocomplete','list');
     search.append(el('span','mark','⌕'),input,el('kbd',null,'/'),results);
-    input.addEventListener('input',()=>runSearch(input,results));
-    input.addEventListener('keydown',e=>{if(e.key==='Escape'){results.hidden=true;input.blur();}if(e.key==='Enter'){const first=results.querySelector('button');if(first)first.click();}});
-    input.addEventListener('blur',()=>setTimeout(()=>{results.hidden=true;},180));
+    /* A dropdown you can only leave by clicking one of its rows is a trap: it
+     * closes on Escape and on any pointer press outside itself, and the arrow
+     * keys walk it without moving focus off the field (aria-activedescendant). */
+    const optionRows=()=>[...results.querySelectorAll('[role=option]')];
+    const setOpen=on=>{
+      results.hidden=!on;input.setAttribute('aria-expanded',String(!!on));
+      if(!on){input.removeAttribute('aria-activedescendant');for(const row of optionRows())row.classList.remove('is-active');}
+    };
+    closeTopSearch=()=>setOpen(false);
+    const moveActive=step=>{
+      const rows=optionRows();if(!rows.length)return;
+      const current=rows.findIndex(row=>row.classList.contains('is-active'));
+      const next=current<0?(step>0?0:rows.length-1):(current+step+rows.length)%rows.length;
+      rows.forEach((row,i)=>{const on=i===next;row.classList.toggle('is-active',on);row.setAttribute('aria-selected',String(on));});
+      input.setAttribute('aria-activedescendant',rows[next].id);rows[next].scrollIntoView({block:'nearest'});
+    };
+    input.addEventListener('input',()=>{runSearch(input,results);setOpen(!results.hidden);});
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){setOpen(false);input.blur();return;}
+      if(e.key==='ArrowDown'){e.preventDefault();moveActive(1);return;}
+      if(e.key==='ArrowUp'){e.preventDefault();moveActive(-1);return;}
+      if(e.key==='Enter'){const row=results.querySelector('[role=option].is-active')||results.querySelector('button');if(row){e.preventDefault();row.click();}}
+    });
+    input.addEventListener('blur',()=>setTimeout(()=>{if(!search.contains(document.activeElement))setOpen(false);},180));
+    document.addEventListener('pointerdown',e=>{if(!results.hidden&&!search.contains(e.target))setOpen(false);});
 
     /* One wrapping control row, not a row plus a nested group that wrapped
-     * again: the record, help and navigation buttons are ordinary members. */
-    bar.replaceChildren(modes,routes,scale,search,download,$('show-provenance'),$('show-help'),document.querySelector('.mobile-toggle'));
+     * again: the record, help and navigation buttons are ordinary members.
+     * On a phone six wrapped rows came to 446px of an 812px screen, so every
+     * control except the view pills folds into one disclosure instead. */
+    const toggle=document.querySelector('.mobile-toggle');
+    const more=el('details','more'),moreBody=el('div','more-body');
+    const moreSummary=el('summary',null,'More ▾');
+    moreSummary.title='The remaining controls: arrows, text size, the proof-index download, the verification record, help and the navigation toggle';
+    more.append(moreSummary,moreBody);
+    const compact=window.matchMedia('(max-width:760px)');
+    const folded=[search,routes,scale,download,$('show-provenance'),$('show-help'),toggle];
+    function layoutToolbar(){
+      if(compact.matches){bar.replaceChildren(modes,more);moreBody.append(...folded);}
+      else{more.open=false;bar.replaceChildren(modes,routes,scale,search,download,$('show-provenance'),$('show-help'),toggle);}
+    }
+    layoutToolbar();
+    (compact.addEventListener?compact.addEventListener.bind(compact,'change'):compact.addListener.bind(compact))(layoutToolbar);
+    document.addEventListener('pointerdown',e=>{if(more.open&&!more.contains(e.target))more.open=false;});
 
     const stats=el('div','stats');
     const rows=[['s-this-paper',closure['this-paper'],'this paper','Declarations proved in Lean in this paper (EthInapproximability.V4.*) and reached from the root theorem'],
@@ -514,31 +581,41 @@
     text.append(el('b',null,'Proof index'),
       el('span',null,['.json.gz',indexSize(),axioms.length+' axioms'].filter(Boolean).join(' · ')));
     link.append(el('span','dl-ic','⬇'),text);
-    link.title='Download the complete compiled proof and source-reference index this page reads: '+count(api.DATA.declarations.length)+' declarations, their exact Lean source and the published verification records. Audited axiom footprint of '+api.DATA.root+': '+(axioms.join(' · ')||'not recorded')+'.';
+    link.title='Download the complete compiled proof and source-reference index this page reads: '+count(api.DATA.declarations.length)+' cards — every declaration in the index, including library-reference cards, which is why it exceeds the intro’s source-declaration count — with their exact Lean source and the published verification records. Audited axiom footprint of '+api.DATA.root+': '+(axioms.join(' · ')||'not recorded')+'.';
     return link;
   }
   function runSearch(input,results){
     const query=input.value.toLowerCase().trim();results.replaceChildren();results.hidden=!query;if(!query)return;
     const page=query.match(/^p\.?\s*(\d+)$/);
-    const add=(label,items)=>{if(!items.length)return;results.append(el('div','rgroup',label));for(const item of items)results.append(item);};
+    let seq=0;
+    const add=(label,items)=>{
+      if(!items.length)return;
+      const head=el('div','rgroup',label);head.setAttribute('role','presentation');results.append(head);
+      for(const item of items){item.setAttribute('role','option');item.setAttribute('aria-selected','false');item.id='top-search-option-'+(++seq);results.append(item);}
+    };
     add('Proof map steps',map.nodes.filter(n=>(n.title+' '+n.summary+' '+n.id).toLowerCase().includes(query)).slice(0,6)
-      .map(n=>{const row=btn(n.title,()=>{input.value='';results.hidden=true;open('overview',n.id);},'graph-paper-link');row.dataset.origin=nodeOrigin(n);row.style.setProperty('--tick',nodeTick(n));row.append(el('span','meta',map.originCaptions[nodeOrigin(n)]));return row;}));
+      .map(n=>{const row=btn(n.title,()=>{input.value='';closeTopSearch();open('overview',n.id);},'graph-paper-link');row.dataset.origin=nodeOrigin(n);row.style.setProperty('--tick',nodeTick(n));row.append(el('span','meta',map.originCaptions[nodeOrigin(n)]));return row;}));
     add('Paper locations',api.DATA.trace.anchors.filter(a=>page?a.page===Number(page[1]):(a.title+' '+a.label).toLowerCase().includes(query)).slice(0,8)
-      .map(a=>{const row=btn(a.title,()=>{input.value='';results.hidden=true;window.V4Trace.selectAnchor(a.id);},'trace-index-item');row.dataset.classification=a.classification;row.style.setProperty('--tick',a.classification==='external'?'var(--hl-external)':a.classification==='assembled'?'var(--hl-assembled)':a.classification==='unmapped'?'var(--hl-unmapped)':a.classification==='context'?'var(--hl-context)':'var(--hl-statement)');row.append(el('span','meta',(a.paperId==='reader'?'Reader':'Formal')+' · page '+a.page));return row;}));
+      .map(a=>{const row=btn(a.title,()=>{input.value='';closeTopSearch();window.V4Trace.selectAnchor(a.id);},'trace-index-item');row.dataset.classification=a.classification;row.style.setProperty('--tick',a.classification==='external'?'var(--hl-external)':a.classification==='assembled'?'var(--hl-assembled)':a.classification==='unmapped'?'var(--hl-unmapped)':a.classification==='context'?'var(--hl-context)':'var(--hl-statement)');row.append(el('span','meta',(a.paperId==='reader'?'Reader':'Formal')+' · page '+a.page));return row;}));
     add('Lean declarations',[...g.cards.values()].filter(d=>d.id.toLowerCase().includes(query)).slice(0,10)
-      .map(d=>{const origin=originOf(d),row=btn(short(d.id),()=>{input.value='';results.hidden=true;open('source',d.id);},'graph-paper-link is-lean');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);row.append(el('span','meta',ORIGINS[origin].name+' · '+d.module));return row;}));
-    if(!results.childElementCount)results.append(el('p','none','Nothing matches that.'));
+      .map(d=>{const origin=originOf(d),row=btn(short(d.id),()=>{input.value='';closeTopSearch();open('source',d.id);},'graph-paper-link is-lean');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);row.append(el('span','meta',ORIGINS[origin].name+' · '+d.module));return row;}));
+    if(!results.childElementCount){const none=el('p','none','No matching step, paper location or declaration. Try a shorter name or another page.');none.setAttribute('role','presentation');results.append(none);}
   }
+  /* Site terminology, applied to the recorded map without editing the record:
+   * the root is the "main theorem", and "on paper" is said as "not in Lean". */
+  const MILESTONE_TEXT={'Headline theorem':'Main theorem','external input · this paper, on paper':'external input · this paper, not in Lean','conditional on the two external inputs':'conditional on the two external inputs'};
+  const milestoneText=text=>MILESTONE_TEXT[text]||text;
   function buildShortcuts(){
     const strip=document.querySelector('.scope-strip');if(!strip)return;
     strip.className='proofmap';strip.setAttribute('role','navigation');strip.setAttribute('aria-label','Shortcuts through the curated proof map');strip.replaceChildren();
-    const label=el('span','pm-label');label.append(el('b',null,'Proof shortcuts'),el('small',null,'external inputs → headline'));
+    const label=el('span','pm-label');label.append(el('b',null,'Proof shortcuts'),el('small',null,'external inputs → main theorem'));
+    label.title='One button per step of the curated mathematical map, ordered from the two external inputs to the main theorem. Selecting one opens that step in the proof map.';
     strip.append(label);
     const order=[...map.nodes].sort((a,b)=>a.level-b.level||a.lane-b.lane);
     order.forEach((n,i)=>{
       const b=btn('',()=>open('overview',n.id));b.dataset.step=n.id;b.dataset.origin=nodeOrigin(n);
-      b.setAttribute('aria-pressed','false');b.title=n.title+' — '+map.originCaptions[nodeOrigin(n)];
-      const copy=el('span','pm-copy');copy.append(el('b',null,n.milestone.label),el('small',null,n.milestone.note));
+      b.setAttribute('aria-pressed','false');b.title=n.title+'—'+map.originCaptions[nodeOrigin(n)];
+      const copy=el('span','pm-copy');copy.append(el('b',null,milestoneText(n.milestone.label)),el('small',null,milestoneText(n.milestone.note)));
       b.append(el('span','pm-num',String(i+1)),copy);strip.append(b);
     });
   }
@@ -546,8 +623,8 @@
    * row's own tooltip, and the standing caveat on the box. It sits over the
    * canvas, so every line it grows costs drawing area. */
   function buildLegend(){
-    const box=el('div','legend');box.setAttribute('aria-label','What the colours and arrows mean');
-    box.title='Colour carries provenance and nothing else; the kind of declaration is a badge. A dashed amber card is an external input — stated, consumed, and not proved in Lean.';
+    const box=el('div','legend');box.setAttribute('aria-label','What the colors and arrows mean');
+    box.title='Color carries provenance and nothing else; the kind of declaration is a badge. A dashed amber card is an external input—stated, consumed, and not proved in Lean.';
     box.append(el('div','lg-t','Provenance'));
     const rows=[['var(--proved)','This paper',false,'Proved in Lean in this paper (EthInapproximability.V4.*).'],
       ['var(--reused)','Companion paper',true,'Reused from the companion paper’s vendored Lean formalization (NPCC.*, Workspace.*, EthBridge.*, LegacyNPCC.*).'],
@@ -559,6 +636,7 @@
       row.title=title;swatch.style.setProperty('--tick',colour);row.append(swatch,el('span',null,text));box.append(row);
     }
     const arrows=el('div','rt');
+    arrows.append(el('div','lg-t','Arrows'));
     for(const [cls,text,title]of [['','Curated mathematics','An arrow of the curated mathematical map: an ingredient of the step it points to.'],
       ['dashed','Source reference','A compiler-recorded source reference between Lean declarations, not a kernel proof-term dependency.']]){
       const row=el('div','row');row.title=title;row.append(el('span','rule '+cls),el('span',null,text));arrows.append(row);
@@ -569,9 +647,9 @@
     const axioms=rootAxioms(),foot=el('footer','sitefoot');
     foot.append(el('b',null,'Axiom footprint:'),el('span','axfoot',axioms.join(' · ')||'not recorded'),
       el('b',null,'External inputs:'),el('span','extfoot','composed source theorem · balanced-family theorem'),
-      el('span',null,map.nodes.length+' map steps · '+count(closure.total)+' declarations in the root closure'),
+      el('span',null,plural(map.nodes.length,'map step','map steps')+' · '+plural(closure.total,'declaration','declarations')+' in the root closure'),
       el('span','spacer'),
-      btn('Verification record',()=>$('show-provenance').click()));
+      btn('Verification record',()=>$('show-provenance').click(),'footlink'));
     foot.title='Recorded by #print axioms on '+api.DATA.root;
     document.body.append(foot);
   }
@@ -587,6 +665,80 @@
     tag();new MutationObserver(tag).observe(list,{childList:true});
   }
 
+  /* ================================================================== *
+   * The offline template writes four pieces of chrome this design layer
+   * has to correct after the fact: a 46-character badge, an uncoloured
+   * dependency graph, raw JSON keys in the provenance tab, and card
+   * headings that break Lean identifiers mid-token.
+   * ================================================================== */
+  function splitAuditBadge(){
+    const host=$('selected-badges');if(!host)return;
+    for(const badge of host.querySelectorAll('.badge')){
+      if(badge.textContent!=='Root axiom audit recorded · conditional theorem')continue;
+      badge.textContent='Root axiom audit recorded';
+      const second=el('span','badge o-external','Conditional theorem');
+      second.title='The theorem is proved under its two explicit external hypotheses; a clean axiom audit does not discharge them.';
+      badge.after(second);
+    }
+  }
+  function tagDependencyNodes(){
+    const panel=$('panel-dependencies');if(!panel)return;
+    for(const node of panel.querySelectorAll('g.graph-node')){
+      if(node.dataset.origin)continue;
+      const label=node.querySelector('title'),id=label?label.textContent:'';
+      const origin=g.cards.has(id)?originOf(g.cards.get(id)):'library';
+      node.dataset.origin=origin;node.classList.add('o-'+origin);
+    }
+  }
+  /* readableKey() turns "receiptSha256" into "receipt Sha256"; these are the
+   * ones a reader should not have to decode. */
+  const PROVENANCE_LABELS={'receipt sha256':'Receipt SHA-256','pdf sha256':'PDF SHA-256','aux sha256':'Aux SHA-256','build log sha256':'Build log SHA-256','source sha256':'Source SHA-256','index sha256':'Index SHA-256','report sha256':'Report SHA-256','curation sha256':'Curation SHA-256',id:'Paper',path:'Repository path',pages:'Pages'};
+  function labelProvenance(){
+    const panel=$('panel-provenance');if(!panel)return;
+    for(const dt of panel.querySelectorAll('dt')){
+      if(dt.dataset.labelled)continue;dt.dataset.labelled='1';
+      const better=PROVENANCE_LABELS[dt.textContent.trim().toLowerCase()];
+      if(better)dt.textContent=better;
+    }
+    for(const a of panel.querySelectorAll('a[href="paper-revision.json"]'))
+      if(!a.hasAttribute('download'))a.setAttribute('download','paper-revision.json');
+  }
+  const HELP_LEAD='Three views of one result. The papers show every formalized statement highlighted in place; the proof map shows how the steps depend on each other, and which two inputs are not proved in Lean; the Lean inspector shows the exact source of any declaration. The pills in the top bar switch between them, and the header search finds a step, a paper location or a declaration in any of the three.';
+  function decorateCards(){
+    const host=$('cards');if(!host)return;
+    for(const card of host.querySelectorAll('.definition-card')){
+      if(card.dataset.decorated)continue;card.dataset.decorated='1';
+      const heading=card.querySelector('.card-header h2');if(!heading)continue;
+      const text=heading.textContent;
+      if(text==='How to inspect this proof'){
+        card.classList.add('is-prose');
+        const body=card.querySelector('.card-body');
+        if(body&&!body.querySelector('.help-lead'))body.prepend(el('p','help-lead',HELP_LEAD));
+      }else if(text.startsWith('Lean syntax: ')){card.classList.add('is-prose');}
+      else wbrify(heading);
+    }
+  }
+  function decorateTemplateChrome(){
+    splitAuditBadge();
+    const title=$('selected-title');if(title)wbrify(title);
+    tagDependencyNodes();labelProvenance();
+    const cards=$('cards');if(cards){decorateCards();new MutationObserver(decorateCards).observe(cards,{childList:true});}
+    const dependencies=$('panel-dependencies');
+    if(dependencies)new MutationObserver(tagDependencyNodes).observe(dependencies,{childList:true,subtree:true});
+    const provenance=$('panel-provenance');
+    if(provenance)new MutationObserver(labelProvenance).observe(provenance,{childList:true,subtree:true});
+    /* Three different declaration counts are on this page and they disagree by
+     * design; each one says which set it is counting. */
+    for(const stat of document.querySelectorAll('.content .stats .stat')){
+      const text=stat.textContent;
+      if(/source declarations/.test(text))stat.title='Declarations whose exact Lean source is embedded in this index. Library-reference and generated-reference cards are counted separately, so the navigation and the download both report more.';
+      else if(/indexed modules/.test(text))stat.title='Lean modules represented in this index, including the vendored companion-paper modules.';
+      else if(/direct source references/.test(text))stat.title='Compiler-recorded references between the indexed declarations, counted once per referring declaration and target.';
+    }
+    const navCount=$('nav-count');
+    if(navCount)navCount.title='Cards matching the current search and filters. This count includes project-generated reference cards — and library-reference cards while that box is ticked — so it is larger than the source-declaration count above.';
+  }
+
   async function start(event){
     api=event.detail;g=G.index(api.DATA);focus=g.root;selected='result';
     window.V4Origin=originOf;
@@ -600,15 +752,28 @@
      * 154px of chrome that the canvas had to give up at short viewports. The
      * view selector and the relation caption move into the status bar, which
      * is the one line of chrome this view keeps above the canvas. */
-    const mode=selectControl('graph-mode','View',[['overview','Mathematical proof map'],['source','Lean source references']],'overview',switchView);
-    const controls=el('div','source-controls');controls.id='source-controls';controls.hidden=true;
+    const mode=selectControl('graph-mode','View',[['overview','Mathematical proof map'],['source','Lean source references']],'overview',switchView,
+      'Which drawing is on the canvas: the curated mathematical map of the papers, or the compiler-recorded source-reference graph around one Lean declaration');
+    /* Four rows of controls above the canvas left the drawing 318px at
+     * 1440x900. They fold, and the fold is remembered for the session. */
+    const controlsBox=el('details','source-controls-box');controlsBox.id='source-controls-box';controlsBox.hidden=true;
+    const controlsSummary=el('summary',null,'Graph controls');
+    controlsSummary.title='Show or hide the search, traversal and provenance filters for the source-reference graph';
+    controlsBox.append(controlsSummary);
+    let controlsOpen=true;try{controlsOpen=sessionStorage.getItem('v4-source-controls')!=='closed';}catch(_){}
+    controlsBox.open=controlsOpen;
+    controlsBox.addEventListener('toggle',()=>{try{sessionStorage.setItem('v4-source-controls',controlsBox.open?'open':'closed');}catch(_){}});
+    const controls=el('div','source-controls');controls.id='source-controls';
     const searchWrap=el('div','graph-search-wrap'),search=el('input'),results=el('div','graph-search-results');search.id='graph-search';search.type='search';search.placeholder='Find a theorem or definition…';search.setAttribute('aria-label','Find graph declaration');results.id='graph-search-results';results.hidden=true;
     const choose=id=>{focus=id;selected=id;pathIds=null;results.hidden=true;search.value='';render();};
     search.addEventListener('input',()=>{const query=search.value.toLowerCase().trim();results.replaceChildren();results.hidden=!query;if(!query)return;const matches=[...g.cards.values()].filter(d=>(d.id+' '+(d.plainEnglish||'')).toLowerCase().includes(query)).slice(0,30);for(const d of matches){const origin=originOf(d),row=btn(d.id,()=>choose(d.id),'graph-paper-link');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);results.append(row);}if(!matches.length)results.append(el('p',null,'No matching declaration.'));});
     search.addEventListener('keydown',e=>{if(e.key==='Escape')results.hidden=true;if(e.key==='Enter'){const first=results.querySelector('button');if(first)first.click();}});searchWrap.append(search,results);controls.append(searchWrap);
-    controls.append(selectControl('graph-direction','Follow',[['out','References used'],['in','Declarations using this'],['both','Both directions']],'out',v=>{options.direction=v;pathIds=null;render();}),
-      selectControl('graph-depth','Depth',[[1,'1 step'],[2,'2 steps'],[3,'3 steps'],[Infinity,'All reachable']],2,v=>{options.depth=Number(v);pathIds=null;render();}),
-      selectControl('graph-limit','Display cap',[[40,'40'],[80,'80'],[160,'160']],80,v=>{options.limit=Number(v);render();}));
+    controls.append(selectControl('graph-direction','Follow',[['out','References used'],['in','Declarations using this'],['both','Both directions']],'out',v=>{options.direction=v;pathIds=null;render();},
+        'Which way to walk the recorded references from the focused declaration: the names it uses, the declarations that use it, or both'),
+      selectControl('graph-depth','Depth',[[1,'1 step'],[2,'2 steps'],[3,'3 steps'],[Infinity,'All reachable']],2,v=>{options.depth=Number(v);pathIds=null;render();},
+        'How many reference steps out from the focused declaration are included'),
+      selectControl('graph-limit','Display cap',[[40,'40'],[80,'80'],[160,'160']],80,v=>{options.limit=Number(v);render();},
+        'Display cap: the largest number of cards or module groups that are DRAWN. It limits the picture only — the counts beside it and the complete eligible list below are unaffected.'));
     const grouped=el('label','graph-check'),groupedInput=el('input');groupedInput.id='graph-grouped';groupedInput.type='checkbox';groupedInput.checked=options.grouped;
     groupedInput.addEventListener('change',()=>{options.grouped=groupedInput.checked;pathIds=null;render();});
     grouped.append(groupedInput,document.createTextNode('Group by module'));controls.append(grouped);
@@ -627,34 +792,61 @@
       filter.append(wrap);
     }
     controls.append(filter);
-    controls.append(btn('Main theorem',()=>{choose(g.root);}),btn('Path from main theorem',()=>findPath(g.cards.has(selected)?selected:focus)));const name=el('div','graph-focus');name.id='graph-focus';controls.append(name);main.append(controls);
-    const bar=el('div','graph-statusbar'),counter=el('div');counter.id='graph-count';counter.setAttribute('role','status');
+    const focusRoot=btn('Main theorem',()=>{choose(g.root);});focusRoot.title='Focus the graph on the root theorem of this development';
+    const pathButton=btn('Path from main theorem',()=>findPath(g.cards.has(selected)?selected:focus));
+    pathButton.title='Draw the shortest chain of recorded source references from the main theorem to the selected declaration';
+    controls.append(focusRoot,pathButton);const name=el('div','graph-focus');name.id='graph-focus';controls.append(name);
+    controlsBox.append(controls);main.append(controlsBox);
+    /* aria-live off, not role=status: this line is a hundred characters of
+     * counts and it was announced in full on every filter change. */
+    const bar=el('div','graph-statusbar'),counter=el('div');counter.id='graph-count';counter.setAttribute('aria-live','off');
     const sub=el('p','graph-subtitle');sub.id='graph-subtitle';
     /* View selector, then what is drawn, then the caption saying what the
      * arrows mean, then the zoom pill and the export. One strip. */
     bar.append(mode,counter,sub);const zoomText=el('output');zoomText.id='graph-zoom';
     const zoomGroup=el('div','control-group');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Graph zoom');
-    /* "Fit width" resets the zoom, so it joins the pill as a fourth child. */
-    zoomGroup.append(btn('−',()=>{zoom=Math.max(.3,zoom-.1);applyZoom();}),zoomText,btn('+',()=>{zoom=Math.min(2.5,zoom+.1);applyZoom();}),btn('Fit width',fit));
+    /* "Fit width" resets the zoom, so it joins the pill as a fourth child.
+     * The accessible NAME of the two steppers stays "−" and "+" — a test
+     * matches them by that exact name — so the explanation is a description. */
+    const zoomOut=btn('−',()=>{zoom=Math.max(.3,zoom-.1);applyZoom();});zoomOut.title='Zoom out';
+    const zoomIn=btn('+',()=>{zoom=Math.min(2.5,zoom+.1);applyZoom();});zoomIn.title='Zoom in';
+    const zoomFit=btn('Fit width',fit);zoomFit.title='Fit the drawing to the panel width';
+    zoomGroup.append(zoomOut,zoomText,zoomIn,zoomFit);
     bar.append(zoomGroup,btn('Export this graph',download));main.append(bar);
     const message=el('p','graph-message');message.id='graph-message';message.setAttribute('role','status');main.append(message);
-    const layout=el('div','graph-layout'),wrap=el('div','canvas-wrap'),canvas=el('div','graph-canvas'),detail=el('aside','graph-detail');canvas.id='graph-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label','Graph canvas. Scroll to move, or drag empty canvas space.');detail.id='graph-detail';detail.setAttribute('aria-live','polite');
-    const fab=el('div','fab');fab.append(btn('Fit',fit),btn('Headline theorem →',()=>{if(viewMode==='overview')detailOverview('result');else choose(g.root);}));
-    wrap.append(canvas,el('div','hint','drag to pan · scroll to zoom · click a step to inspect it'),buildLegend(),fab);
-    layout.append(wrap,detail);main.append(layout);
+    const layout=el('div','graph-layout'),wrap=el('div','canvas-wrap'),canvas=el('div','graph-canvas');
+    const aside=el('div','graph-aside'),detail=el('aside','graph-detail');
+    canvas.id='graph-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label','Graph canvas. Scroll to move, or drag empty canvas space.');detail.id='graph-detail';detail.setAttribute('aria-live','polite');
+    const fab=el('div','fab');fab.append(btn('Fit',fit),btn('Main theorem →',()=>{if(viewMode==='overview')detailOverview('result');else choose(g.root);}));
+    const hint=el('div','hint','drag to pan · scroll to zoom · click a step to inspect it');
+    wrap.append(canvas,hint,buildLegend(),fab);
+    aside.append(detail);
+    layout.append(wrap,aside);main.append(layout);
+    /* The hint is read once. After seven seconds, or the first press or key on
+     * the drawing, it fades out and hands its band back to the canvas. */
+    const dismissHint=()=>{if(hint.classList.contains('is-gone'))return;clearTimeout(hintTimer);hint.classList.add('is-gone');document.body.classList.add('hint-gone');};
+    const hintTimer=setTimeout(dismissHint,7000);
+    canvas.addEventListener('pointerdown',dismissHint);canvas.addEventListener('keydown',dismissHint);
     let pan=null;canvas.addEventListener('pointerdown',e=>{if(e.target.closest('[data-graph-node],.proof-edge'))return;pan={x:e.clientX,y:e.clientY,left:canvas.scrollLeft,top:canvas.scrollTop};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(pan){canvas.scrollLeft=pan.left+pan.x-e.clientX;canvas.scrollTop=pan.top+pan.y-e.clientY;}});canvas.addEventListener('pointerup',()=>pan=null);canvas.addEventListener('pointercancel',()=>pan=null);
-    const complete=el('details','graph-complete-list');complete.append(el('summary',null,'Complete eligible node list and graph data'));const list=el('div');list.id='graph-node-list';const full=el('a',null,'Download complete proof and reference index (.gz)');full.href='proof-data.json.gz';full.download='communication-complexity-proof-index.json.gz';complete.append(el('p',null,'The display cap affects only the drawing. This list includes every eligible declaration in the selected traversal; the full download also contains declarations outside that traversal.'),full,list);main.append(complete);
+    const complete=el('details','graph-complete-list');complete.append(el('summary',null,'Complete eligible node list and graph data'));const list=el('div');list.id='graph-node-list';const full=el('a',null,'Download complete proof and reference index (.gz)');full.href='proof-data.json.gz';full.download='communication-complexity-proof-index.json.gz';complete.append(el('p',null,'The display cap affects only the drawing. This list includes every eligible declaration in the selected traversal; the full download also contains declarations outside that traversal.'),full,list);aside.append(complete);
     /* The pill names the VIEW, not one of its two relations: it stays pressed
      * while the view is open, and the arrows group next to it says which
      * relation is drawn. Labelling it "Proof map" contradicted its own pressed
      * state as soon as the Lean source graph was selected. */
-    $('workspace').before(main);const nav=btn('Graph',()=>open('overview'));nav.id='open-proof-map';nav.title='The dependency explorer: the curated mathematical proof map, and the Lean source-reference graph';$('open-paper-trace').after(nav);
+    $('workspace').before(main);const nav=btn('Proof map',()=>open('overview'));nav.id='open-proof-map';nav.title='The dependency explorer: the curated mathematical proof map, and the Lean source-reference graph';$('open-paper-trace').after(nav);
     buildHeader();buildShortcuts();buildFooter();decorateNavigation();
     document.addEventListener('v4-view-changed',e=>{const on=e.detail.mode==='graph';main.hidden=!on;nav.setAttribute('aria-pressed',String(on));if(!on)markShortcut(null);});
     document.addEventListener('v4-declaration-selected',e=>{
-      const d=g.cards.get(e.detail.id);if(!d)return;const origin=originOf(d),host=$('selected-badges');
-      const badge=el('span','badge o-'+origin,ORIGINS[origin].mark);badge.title=originSentence(origin,d.module);host.prepend(badge);
+      const d=g.cards.get(e.detail.id);
+      if(d){
+        const origin=originOf(d),host=$('selected-badges');
+        const badge=el('span','badge o-'+origin,ORIGINS[origin].mark);badge.title=originSentence(origin,d.module);host.prepend(badge);
+      }
+      splitAuditBadge();
+      const title=$('selected-title');if(title){delete title.dataset.wbr;wbrify(title);}
+      tagDependencyNodes();labelProvenance();
     });
+    decorateTemplateChrome();
     /* "/" belongs to whichever view is open: the paper index (claimed by
      * trace.js), the Lean navigation (claimed by the offline template) or,
      * on the map, this command bar. Stopping propagation in the capture phase

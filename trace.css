@@ -50,11 +50,15 @@
 
 /* --- Three-column reading layout ----------------------------------------- */
 
+/* Height comes from the shell, not from a guess about how tall the chrome is:
+ * design.css makes #paper-workspace a flex column and this row the part that
+ * grows. A fixed `calc(100vh - <chrome>)` was wrong by 176px. */
 .paper-layout{
   display:grid;
   grid-template-columns:17rem minmax(22rem,1fr) 25rem;
-  height:calc(100vh - 12rem);
-  min-height:35rem;
+  flex:1 1 0;
+  height:auto;
+  min-height:0;
 }
 
 /* --- Statement index (left column) --------------------------------------- */
