@@ -285,3 +285,66 @@ footer is 29px. At 375x812 the header is 169px in all three views with no
 horizontal overflow. At 200% text the canvas is exactly 70vh. The clip-aware
 highlight overlap probe is 0 on both papers, mapped and unmapped, and the
 selected highlight's border box still equals its recorded coordinates.
+
+## Final polish
+
+**The header follows the UI-size control.** The identity, the counts and the
+pill labels were set in fixed pixels while the eyebrow above them was in `rem`,
+so at 200% the eyebrow was 21px and the heading it introduced was still 14.5px.
+Every size in the top bar is a `rem` now, chosen to be the same number of
+pixels at a 16px root — 14.5px is `.90625rem`, 10.5px is `.65625rem`, 15px is
+`.9375rem`, 11px is `.6875rem`, 9.5px is `.59375rem` — so at 100% the header is
+byte-for-byte what it was and at 200% it grows with the reader. Doubling the
+type doubles the bar, so at 150% and up it spends its room the way the narrow
+breakpoints already do: the paper-title subtitle goes, the scope caveat keeps
+its two-line clamp, the counts become one horizontal strip, the eight controls
+fold into the same `More` disclosure the phone uses, and the paddings come in.
+Nothing is pinned back to a fixed size. Measured at 1440 wide: 165px at 100%
+(unchanged), 295px at 200% (was 474px with the sizes converted and nothing
+else done).
+
+**The scope caveat is reachable on a touch screen.** It is clamped to two lines
+below 1400px and its `title` carried the rest, which reaches a mouse and
+nothing else. Where the clamp actually bites — measured, not assumed —
+graph.js appends a `more` button that removes it, and the phone's `More` panel
+prints the whole sentence as its first item. The button's press target is grown
+around the word rather than under it, so the phone header stays inside its
+budget: 175px at 375x812 with the caveat collapsed.
+
+**One spelling on screen.** The brand subtitle printed the recorded paper
+titles, so "Formalisation-facing paper" sat two lines above the tracer's own
+relabelled "Formalization-facing paper". Both now go through the single
+`paperOptionLabel` in trace.js. The canvas hint said "headline theorem" where
+the rest of the site says "main theorem".
+
+**Provenance keys are humanised, not allow-listed.** The template's
+`readableKey` splits `receiptSha256` into "receipt Sha256" and stops, and only a
+listed handful were repaired, so the tab still printed "end Line",
+"generated At" and "verification Mode". Every key is now split, lowercased and
+sentence-cased — "End line", "Generated at", "Verification mode" — with the
+explicit map kept for the ones English gets wrong (SHA-256, PDF, the paper id,
+the repository path).
+
+**The floating buttons are reachable where the shell is released.** That clamp
+is what promised they are never below the fold; where it is given up, at
+1024x768 they arrived 71px past the bottom edge. They follow the viewport there
+instead, offset by the footer's own height so they clear it at the end of the
+scroll. Sticky was tried first and is the wrong tool: the released body is its
+own scroll container and is exactly as tall as its content, so a sticky button
+is never pulled up. At 1440x900 the clamp still holds and they stay in the
+canvas's bottom-right corner, 16px in, as before. Neither position meets the
+legend.
+
+**Graph controls start folded.** Arriving in the Lean source view, what a
+reader needs is the drawing; the filters answer a question they have not asked
+yet. The session still remembers an opened panel, and the two actions that
+reach in and change a control inside it — `Explore from here`, which unticks
+"Group by module", and `Path from main theorem` — open it themselves rather
+than moving a control out of sight.
+
+Also: the provenance card's six inks are `color-mix` of the origin colour
+towards `--ink` rather than six hand-mixed hexes, each within 3.4% of a channel
+of the hex it replaced and between 9.5:1 and 11.5:1 on its own fill; the graph
+search's empty state is the muted `.nav-empty` row the other two searches use,
+and says what to try; and `colourable`/`colouring` in the curated map's prose
+are US-spelled like the rest of the site.

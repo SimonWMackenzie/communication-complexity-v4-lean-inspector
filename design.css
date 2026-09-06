@@ -445,11 +445,11 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:5px;
   background:var(--panel2);
   font-family:var(--mono);
-  font-size:14px;
+  font-size:.875rem;
   line-height:1;
 }
 .scale-controls button:hover{background:var(--panel2);color:#fff;border-color:var(--accent);box-shadow:none}
-.scale-controls output{min-width:38px;font-size:11px}
+.scale-controls output{min-width:38px;font-size:.6875rem}
 
 /* =============================================================================
    §5  EYEBROW AND DETAIL HEADERS
@@ -525,6 +525,10 @@ input[type=checkbox]{accent-color:var(--accent)}
 
 /* --- The provenance card (reference .prov) -------------------------------- */
 
+/* Its three inks are the origin colour lightened towards --ink rather than six
+   hand-mixed hexes, so a change to --reused/--axiom/--proved carries. Each
+   percentage reproduces the hex it replaced to within 3.4% of a channel and
+   clears 4.5:1 on its own fill (measured: 9.5, 10.5 / 10.4, 10.8 / 10.7, 11.5). */
 .prov{
   margin:var(--sp-4) 0;
   padding:var(--sp-4) var(--sp-5);
@@ -533,7 +537,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   border-radius:var(--r-md);
   font-size:var(--fs-md);
   line-height:1.55;
-  color:#9bdae2;
+  color:color-mix(in srgb,var(--reused) 42%,var(--ink));
 }
 /* Label above value: both detail asides are narrow columns, and a two-column
    definition list leaves the sentences a few words wide. */
@@ -547,13 +551,13 @@ input[type=checkbox]{accent-color:var(--accent)}
   color:var(--reused);
 }
 .prov dt:first-child{margin-top:0}
-.prov dd{margin:var(--sp-1) 0 0;color:#c2dfe4;overflow-wrap:anywhere}
-.prov.is-external{background:var(--axiom-fill);border-color:var(--axiom-dim);color:#e4cfa9}
+.prov dd{margin:var(--sp-1) 0 0;color:color-mix(in srgb,var(--reused) 20%,var(--ink));overflow-wrap:anywhere}
+.prov.is-external{background:var(--axiom-fill);border-color:var(--axiom-dim);color:color-mix(in srgb,var(--axiom) 41%,var(--ink))}
 .prov.is-external dt{color:var(--axiom)}
-.prov.is-external dd{color:#e6d6b8}
-.prov.is-result{background:var(--proved-fill);border-color:var(--proved-dim);color:#bcdcc6}
+.prov.is-external dd{color:color-mix(in srgb,var(--axiom) 34%,var(--ink))}
+.prov.is-result{background:var(--proved-fill);border-color:var(--proved-dim);color:color-mix(in srgb,var(--proved) 26%,var(--ink))}
 .prov.is-result dt{color:var(--proved)}
-.prov.is-result dd{color:#cfe4d6}
+.prov.is-result dd{color:color-mix(in srgb,var(--proved) 13%,var(--ink))}
 
 /* =============================================================================
    §6  BADGES AND ORIGIN MARKS
@@ -743,10 +747,14 @@ input[type=checkbox]{accent-color:var(--accent)}
   flex:1 1 26rem;
   min-width:0;
 }
+/* Every size in this bar is a rem, so the "UI size" control — which sets the
+   root font size — moves the whole header together. With the identity in fixed
+   px and the eyebrow above it in rem, the eyebrow outgrew its own heading at
+   200%. §21 gives back the padding the larger type takes. */
 .brand .eyebrow{color:var(--accent);line-height:1.3}
 .brand h1{
   margin:0;
-  font-size:14.5px;
+  font-size:.90625rem;
   font-weight:650;
   letter-spacing:-.01em;
   white-space:nowrap;
@@ -763,7 +771,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   -webkit-line-clamp:2;
   line-clamp:2;
   font-family:var(--mono);
-  font-size:10.5px;
+  font-size:.65625rem;
   line-height:1.35;
   color:var(--muted);
   overflow:hidden;
@@ -775,8 +783,9 @@ input[type=checkbox]{accent-color:var(--accent)}
    whole sentence. */
 .brand .scopecaveat{
   display:block;
+  position:relative;
   max-width:88rem;
-  font-size:10.5px;
+  font-size:.65625rem;
   line-height:1.35;
   color:var(--muted);
   overflow:visible;
@@ -784,6 +793,51 @@ input[type=checkbox]{accent-color:var(--accent)}
 .brand .scopecaveat b{color:var(--ink);font-weight:600}
 .brand .scopecaveat .ext{color:var(--axiom);font-weight:600}
 .brand .scopecaveat .cmp{color:var(--reused);font-weight:600}
+/* Wherever the caveat is clamped, `title` reaches a mouse and nothing reaches a
+   finger. graph.js measures the clamp and appends this button; pressing it sets
+   .expanded, which outranks every clamp below because it is one class more
+   specific. The full sentence is also printed in the phone "More" panel. */
+.caveat-more{
+  position:relative;
+  align-self:flex-start;
+  min-height:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:none;
+  box-shadow:none;
+  font-family:var(--mono);
+  font-size:.59375rem;
+  line-height:1.4;
+  color:var(--reused);
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+/* The word is small on purpose — it costs the header 13px — so the press
+   target is grown around it instead of under it. */
+.caveat-more::after{content:"";position:absolute;inset:-9px -14px}
+.caveat-more:hover{background:none;border-color:transparent;color:#fff;box-shadow:none}
+/* One selector deliberately more specific than every clamp below — the 1400px
+   and 760px breakpoints and the large-text block — so pressing "more" wins
+   wherever the clamp was applied. */
+.topbar .brand .scopecaveat.expanded{
+  display:block;
+  -webkit-line-clamp:none;
+  line-clamp:none;
+  max-width:88rem;
+  overflow:visible;
+}
+/* The same sentence, printed in full, inside the phone control panel. */
+.more-caveat{
+  font-family:var(--mono);
+  font-size:.65625rem;
+  line-height:1.4;
+  color:var(--muted);
+}
+.more-caveat b{color:var(--ink);font-weight:600}
+.more-caveat .ext{color:var(--axiom);font-weight:600}
+.more-caveat .cmp{color:var(--reused);font-weight:600}
 
 .toolbar{
   order:3;
@@ -803,7 +857,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   min-height:0;
   padding:6px 11px;
   font-family:var(--mono);
-  font-size:11px;
+  font-size:.6875rem;
   background:transparent;
   border-color:var(--line);
   color:var(--muted);
@@ -811,6 +865,52 @@ input[type=checkbox]{accent-color:var(--accent)}
 .toolbar>#show-provenance:hover,
 .toolbar>#show-help:hover,
 .toolbar>#toggle-nav:hover{background:var(--panel2);color:#fff;border-color:var(--accent)}
+
+/* --- The folded control panel ("More ▾") ---------------------------------- */
+/* graph.js folds every control except the view pills into this one disclosure
+   wherever the control row would otherwise cost the header three or four rows:
+   on a phone, and at a text size of 150% and up, where the same eight controls
+   wrap the same way on a desktop screen. The rules are unconditional because
+   .more is only ever IN the toolbar while it is folded. */
+
+.toolbar .more{position:relative;flex:0 0 auto}
+.toolbar .more>summary{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 11px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:.6875rem;
+  color:var(--muted);
+  white-space:nowrap;
+  list-style:none;
+}
+.toolbar .more[open]>summary{background:var(--accent-fill);border-color:var(--accent);color:#fff}
+.toolbar .more>summary::-webkit-details-marker{display:none}
+.toolbar .more-body{
+  position:absolute;
+  right:0;
+  top:calc(100% + var(--sp-2));
+  z-index:45;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:var(--sp-3);
+  width:min(19rem,calc(100vw - 1.5rem));
+  max-height:min(70vh,32rem);
+  overflow-y:auto;
+  padding:var(--sp-4);
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  box-shadow:var(--shadow-2);
+}
+.toolbar .more-body>*{flex:0 0 auto;align-self:stretch}
+.toolbar .more-body .routes,
+.toolbar .more-body .scale-controls{justify-content:flex-start}
 
 /* --- The proof-index download (the reference's .dlbtn) -------------------- */
 
@@ -830,10 +930,10 @@ input[type=checkbox]{accent-color:var(--accent)}
 }
 .dlbtn:hover{border-color:var(--reused);background:#0e2429}
 .dlbtn:active{transform:translateY(1px)}
-.dlbtn .dl-ic{font-size:15px;line-height:1;color:var(--reused)}
+.dlbtn .dl-ic{font-size:.9375rem;line-height:1;color:var(--reused)}
 .dlbtn .dl-tx{display:flex;flex-direction:column;line-height:1.18}
-.dlbtn .dl-tx b{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink)}
-.dlbtn .dl-tx span{font-family:var(--mono);font-size:9px;letter-spacing:.03em;color:var(--muted)}
+.dlbtn .dl-tx b{font-family:var(--mono);font-size:.6875rem;font-weight:600;color:var(--ink)}
+.dlbtn .dl-tx span{font-family:var(--mono);font-size:.5625rem;letter-spacing:.03em;color:var(--muted)}
 
 /* --- Pill groups: .modes, .routes, .uical --------------------------------- */
 
@@ -859,7 +959,7 @@ input[type=checkbox]{accent-color:var(--accent)}
   background:transparent;
   color:var(--muted);
   font-family:var(--mono);
-  font-size:11px;
+  font-size:.6875rem;
   white-space:nowrap;
 }
 .routes button{padding:5px 10px}
@@ -875,7 +975,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 body:not(.mode-graph) .topbar .routes{display:none}
 .routes .rlbl{
   font-family:var(--mono);
-  font-size:9px;
+  font-size:.5625rem;
   letter-spacing:.1em;
   text-transform:uppercase;
   color:var(--faint);
@@ -883,7 +983,7 @@ body:not(.mode-graph) .topbar .routes{display:none}
 }
 .uical .ul{
   font-family:var(--mono);
-  font-size:9px;
+  font-size:.5625rem;
   letter-spacing:.1em;
   text-transform:uppercase;
   color:var(--faint);
@@ -913,14 +1013,14 @@ body:not(.mode-graph) .topbar .routes{display:none}
 }
 .topbar .stat b{
   font-family:var(--mono);
-  font-size:15px;
+  font-size:.9375rem;
   font-weight:600;
   font-variant-numeric:tabular-nums;
   color:var(--ink);
   margin:0;
 }
 .topbar .stat span{
-  font-size:9.5px;
+  font-size:.59375rem;
   letter-spacing:.08em;
   text-transform:uppercase;
   color:var(--muted);
@@ -952,7 +1052,7 @@ body:not(.mode-graph) .topbar .routes{display:none}
   margin-top:1px;
   text-align:right;
   font-family:var(--mono);
-  font-size:9.5px;
+  font-size:.59375rem;
   letter-spacing:.03em;
   color:var(--faint);
 }
@@ -2229,6 +2329,23 @@ body.hint-gone .graph-canvas{padding-top:var(--sp-4)}
      and neither one lengthens the row past the other. */
   body.mode-graph .graph-canvas,
   body.mode-graph .graph-aside{height:clamp(20rem,70vh,44rem);max-height:none}
+  /* Once the shell is released the canvas bottom — and the two floating
+     buttons standing on it — start below the fold: at 1024x768 "Fit" and
+     "Main theorem →" arrived 71px past the edge, and a released shell is
+     exactly where the guarantee that they are never below the fold was given
+     up. They follow the viewport here instead. Sticky is the wrong tool: the
+     released body is itself the scroll container and is exactly as tall as its
+     content, so a sticky button is never pulled up (measured: no shift at all).
+     The extra 2rem of offset is the footer strip: both it and the offset are
+     sized in rem, so at the end of the scroll the buttons clear the footer
+     instead of landing on it. The legend keeps the canvas's opposite corner.
+     Large-text mode lays both out in flow, below the drawing, and keeps them
+     there. */
+  html:not(.large-text) body.mode-graph .fab{
+    position:fixed;
+    right:var(--sp-5);
+    bottom:calc(var(--sp-5) + 2rem);
+  }
 }
 
 /* The paper tracer's one-screen shell is released on the same terms, plus at
@@ -2256,7 +2373,9 @@ body.hint-gone .graph-canvas{padding-top:var(--sp-4)}
      Six wrapped rows of controls came to 446px of a 812px screen. Identity and
      the view pills stay; every other control moves into one disclosure, which
      opens as a panel over the page rather than growing the header. */
-  .topbar{padding:var(--sp-4);gap:var(--sp-3)}
+  /* The caveat's "more" button costs the identity block one 13px line; the
+     bar gives it back out of its own vertical padding. */
+  .topbar{padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
   .brand h1{font-size:var(--fs-xl);white-space:normal}
   .brand .scopecaveat{
     display:-webkit-box;
@@ -2270,7 +2389,7 @@ body.hint-gone .graph-canvas{padding-top:var(--sp-4)}
   .modes,
   .routes{flex-wrap:wrap}
   .modes button,
-  .routes button{padding:5px 8px;font-size:10.5px}
+  .routes button{padding:5px 8px;font-size:.65625rem}
   /* One horizontal strip of counts, never a second and third row of them. */
   .topbar .stats{
     width:100%;
@@ -2283,42 +2402,6 @@ body.hint-gone .graph-canvas{padding-top:var(--sp-4)}
   }
   .topbar .stats .stat{flex:0 0 auto}
   .topbar .stats-note{display:none}
-  .toolbar .more{position:relative;flex:0 0 auto}
-  .toolbar .more>summary{
-    display:inline-flex;
-    align-items:center;
-    padding:6px 11px;
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:var(--r-md);
-    cursor:pointer;
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--muted);
-    white-space:nowrap;
-    list-style:none;
-  }
-  .toolbar .more[open]>summary{background:var(--accent-fill);border-color:var(--accent);color:#fff}
-  .toolbar .more>summary::-webkit-details-marker{display:none}
-  .toolbar .more-body{
-    position:absolute;
-    right:0;
-    top:calc(100% + var(--sp-2));
-    z-index:45;
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    gap:var(--sp-3);
-    width:min(19rem,calc(100vw - 1.5rem));
-    padding:var(--sp-4);
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:var(--r-md);
-    box-shadow:var(--shadow-2);
-  }
-  .toolbar .more-body>*{flex:0 0 auto;align-self:stretch}
-  .toolbar .more-body .routes,
-  .toolbar .more-body .scale-controls{justify-content:flex-start}
   .searchbox{flex:1 1 auto}
   .searchbox input{width:100%}
   .searchbox .results{width:100%;left:auto;right:0}
@@ -2390,8 +2473,42 @@ body.hint-gone .graph-canvas{padding-top:var(--sp-4)}
 .large-text body.mode-paper .paper-layout{flex:0 0 auto;min-height:0;grid-template-rows:auto}
 .large-text .workspace{grid-template-columns:minmax(12rem,17rem) minmax(0,1fr)}
 .large-text .graph-statusbar #graph-subtitle{flex-basis:100%}
-.large-text .brand .sub,
-.large-text .brand .scopecaveat{display:block;overflow:visible}
+/* --- The header at 150-200% ------------------------------------------------
+   Every size in the top bar is a rem now, so it grows with the reader's own
+   setting instead of standing still while the rem-sized eyebrow overtook it.
+   Doubling the type doubles the header too, and 474px of a 900px screen is not
+   a header — so the bar spends its remaining room the way §20 already spends it
+   at narrow widths: the running paper-title subtitle goes (every card that
+   links to a paper names it again), the scope caveat keeps its two-line clamp
+   with the "more" button that opens it, and the paddings and gaps around them
+   come in. Nothing is pinned back to a fixed pixel size. */
+.large-text .brand .sub:not(.scopecaveat){display:none}
+.large-text .brand .scopecaveat{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  overflow:hidden;
+}
+.large-text .topbar{padding:8px 14px;gap:8px 12px}
+/* One horizontal strip of counts, exactly as on a phone: at 200% the wrapped
+   block was three rows and 166px on its own. The caption that says what the
+   four provenance counts are counts OF stays in the strip rather than claiming
+   a row of its own. */
+.large-text .topbar .stats{
+  width:100%;
+  max-width:none;
+  margin:0;
+  gap:6px var(--sp-5);
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  justify-content:flex-start;
+  align-items:center;
+}
+.large-text .topbar .stats .stat{flex:0 0 auto}
+.large-text .topbar .stats-note{flex:0 0 auto;margin-top:0;text-align:left}
+.large-text .toolbar{gap:6px}
+.large-text .caveat-more{line-height:1.2}
 .large-text .graph-layout{display:flex;flex-direction:column}
 .large-text .canvas-wrap{flex-direction:column;width:100%}
 /* The canvas is capped, not merely floored: at 200% text a `height:70vh` with

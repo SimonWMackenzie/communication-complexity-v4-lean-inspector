@@ -14,7 +14,7 @@
     "result": "MAIN THEOREM · CONDITIONAL"
   },
   "nodes": [
-    {"id":"source","title":"Source graphs","origin":"external-companion","milestone":{"label":"Composed source","note":"external input · companion paper"},"summary":"Translate a formula into one fixed list of graphs. Satisfiability and unsatisfiability give different colouring guarantees for that same list. This existence theorem is not proved in Lean: it enters the root theorem as an explicit hypothesis. Expander existence is upstream of it, not a third direct input.","external":true,"level":0,"lane":0,"paperAnchors":["formal:ass:finite-source","reader:sec:reader-external-inputs"],
+    {"id":"source","title":"Source graphs","origin":"external-companion","milestone":{"label":"Composed source","note":"external input · companion paper"},"summary":"Translate a formula into one fixed list of graphs. Satisfiability and unsatisfiability give different coloring guarantees for that same list. This existence theorem is not proved in Lean: it enters the root theorem as an explicit hypothesis. Expander existence is upstream of it, not a third direct input.","external":true,"level":0,"lane":0,"paperAnchors":["formal:ass:finite-source","reader:sec:reader-external-inputs"],
      "provenance":{
        "statedBy":"Formal paper, Assumption 4.1 (ass:finite-source), §4 “Guarded source”; reader paper §2.2 (sec:reader-external-inputs).",
        "lean":"Not proved in Lean. The Lean development states the contract (FiniteSourceRealLogSpec) and consumes a provider (FiniteSourceProvider); it never proves that a provider exists.",
@@ -63,7 +63,7 @@
     {"source":"seed","target":"iteration","meaning":"Provides the initial exact cost and robust lower bound."},
     {"source":"one-level","target":"iteration","meaning":"Provides a repeatable successor and exact budget recurrence."},
     {"source":"iteration","target":"gap","meaning":"Supplies the actual chain for the positive and negative inductions."},
-    {"source":"source","target":"gap","meaning":"A satisfiable formula has a three-colourable source graph; an unsatisfiable formula makes every source graph far from three-colourable. These give the existential and universal clauses, respectively."},
+    {"source":"source","target":"gap","meaning":"A satisfiable formula has a three-colorable source graph; an unsatisfiable formula makes every source graph far from three-colorable. These give the existential and universal clauses, respectively."},
     {"source":"iteration","target":"width","meaning":"Supplies exact carrier recurrences for those matrices."},
     {"source":"parameters","target":"width","meaning":"Supplies the uniform cutoff and finite-depth size estimates."},
     {"source":"width","target":"size","meaning":"Bounds both carrier sizes by powers of two."},

@@ -87,6 +87,10 @@
 
   let api,g,map,viewMode='overview',focus,selected,view,zoom=1,pathIds=null,svgSize,sequence=0,closure,originTotals;
   let closeTopSearch=()=>{};
+  /* Opens the folded "Graph controls" panel. Set once the panel exists, and
+   * called only by the two actions that reach in and change a control inside
+   * it, so nothing moves out of sight. */
+  let revealControls=()=>{};
   const options={direction:'out',depth:2,limit:80,libraries:false,grouped:true};
   const originShown={'this-paper':true,'earlier-route':true,companion:true,library:false};
   const companionCache=new Map();
@@ -129,13 +133,15 @@
    * ------------------------------------------------------------------ */
   /* The hint states the reading direction of the drawing actually on screen.
    * The curated map is laid out by level, top to bottom: the two external
-   * inputs are level 0 and the headline theorem is the last level. The source
+   * inputs are level 0 and the main theorem is the last level. The source
    * graph is laid out by distance from the focused declaration, left to right,
-   * one column per traversal step in whichever direction is selected. */
+   * one column per traversal step in whichever direction is selected.
+   * "Main theorem" is the site's own name for the root — see MILESTONE_TEXT —
+   * and this line has to use it too. */
   function setHint(next){
     const hint=document.querySelector('#graph-workspace .hint');if(!hint)return;
     const lines=next==='overview'
-      ?['drag to pan · scroll to zoom · click a step to inspect it','external inputs at the top → headline theorem at the bottom']
+      ?['drag to pan · scroll to zoom · click a step to inspect it','external inputs at the top → main theorem at the bottom']
       :['drag to pan · scroll to zoom · click a card to inspect it','the focused declaration on the left → one traversal step per column to the right'];
     hint.replaceChildren(document.createTextNode(lines[0]),el('br'),document.createTextNode(lines[1]));
   }
@@ -197,7 +203,7 @@
     const counts=el('div','graph-stat-row');
     counts.append(el('span',null,plural(g.out.get(id).length,'outgoing reference','outgoing references')),el('span',null,plural(g.incoming.get(id).length,'incoming reference','incoming references')));host.append(counts);
     const actions=el('div','graph-actions');
-    actions.append(btn('Explore from here',()=>{focus=id;pathIds=null;options.grouped=false;$('graph-grouped').checked=false;render();}),
+    actions.append(btn('Explore from here',()=>{focus=id;pathIds=null;options.grouped=false;$('graph-grouped').checked=false;revealControls();render();}),
       btn('Open statement',()=>window.V4Trace.openLean(id,'statement')),
       btn('Full source and proof',()=>window.V4Trace.openLean(id,'source')),
       btn('Definition card',()=>api.openDeclarationCard(id)),
@@ -402,7 +408,7 @@
     /* A zero-edge "path" is not a path; say what is actually true. */
     if(id===g.root){$('graph-message').textContent='You are already at the main theorem.';detailCard(id);return;}
     const p=G.path(g,g.root,id);if(!p){$('graph-message').textContent='No recorded source-reference path from the main theorem to this name. This does not establish mathematical independence.';return;}
-    viewMode='source';$('graph-mode').value='source';$('source-controls-box').hidden=false;focus=g.root;pathIds=p;selected=id;render();$('graph-message').textContent='A shortest recorded-reference path: '+(p.length-1)+' edges. It is not a kernel proof-term trace.';detailCard(id);
+    viewMode='source';$('graph-mode').value='source';$('source-controls-box').hidden=false;revealControls();focus=g.root;pathIds=p;selected=id;render();$('graph-message').textContent='A shortest recorded-reference path: '+(p.length-1)+' edges. It is not a kernel proof-term trace.';detailCard(id);
   }
   function originSummary(ids,host){
     const totals=originCounts(ids);
@@ -464,9 +470,12 @@
     const brand=document.querySelector('.brand'),bar=document.querySelector('.toolbar');
     brand.querySelector('.eyebrow').textContent='Lean-checked finite theorem · Lean 4';
     const sub=brand.querySelector('.small')||el('div','sub');sub.className='sub';
-    sub.textContent=api.DATA.trace.papers.map(p=>p.title).join(' · ')+' — Communication complexity — paper ⇄ Lean inspector';
+    /* The same relabel the tracer's manuscript select uses: the recorded title
+     * is "Formalisation-facing paper", the site's prose is US-spelled, and
+     * printing both spellings on one screen is the bug this fixes. */
+    sub.textContent=api.DATA.trace.papers.map(window.V4Trace.paperOptionLabel).join(' · ')+' — Communication complexity — paper ⇄ Lean inspector';
     if(!sub.parentElement)brand.append(sub);
-    const caveat=el('div','sub scopecaveat');
+    const caveat=el('div','sub scopecaveat');caveat.id='scope-caveat';
     caveat.append(el('b',null,'Scope of the machine check: '),
       document.createTextNode('Lean proves the finite fixed-k gap and same-matrix size bound, conditional on two explicit external inputs: '),
       el('span','ext','the composed source theorem'),document.createTextNode(' (intended source: '),
@@ -474,9 +483,35 @@
       el('span','ext','the balanced-family theorem'),
       document.createTextNode(' (proved in this paper, outside Lean). Runtime, effectivity and the ETH consequence are outside the formalized scope.'));
     /* Narrow headers clamp this to two lines, so the full sentence has to stay
-     * reachable rather than silently truncated. */
+     * reachable rather than silently truncated. `title` does that for a mouse
+     * and for nothing else, so where the clamp actually bites the caveat also
+     * gets a press target that removes it. */
     caveat.title=caveat.textContent;
     brand.append(caveat);
+    /* A copy of the same sentence, unclamped, inside the phone control panel:
+     * on a touch screen that is where every other folded control now lives. */
+    const caveatCopy=caveat.cloneNode(true);
+    caveatCopy.className='more-caveat';caveatCopy.removeAttribute('id');caveatCopy.removeAttribute('title');
+    const caveatMore=btn('more',()=>{
+      const open=!caveat.classList.contains('expanded');
+      caveat.classList.toggle('expanded',open);
+      caveatMore.textContent=open?'less':'more';
+      caveatMore.setAttribute('aria-expanded',String(open));
+      caveatMore.title=open?'Collapse the scope caveat':'Read the whole scope caveat';
+    },'caveat-more');
+    caveatMore.hidden=true;caveatMore.setAttribute('aria-expanded','false');
+    caveatMore.setAttribute('aria-controls','scope-caveat');
+    caveatMore.title='Read the whole scope caveat';
+    brand.append(caveatMore);
+    /* The clamp is a breakpoint and a text-size decision, not a constant: the
+     * button appears exactly when the box is actually cutting the sentence. */
+    const syncCaveat=()=>{
+      if(caveat.classList.contains('expanded')){caveatMore.hidden=false;return;}
+      caveatMore.hidden=caveat.scrollHeight<=caveat.clientHeight+1;
+    };
+    syncCaveat();requestAnimationFrame(syncCaveat);
+    if(window.ResizeObserver)new ResizeObserver(syncCaveat).observe(caveat);
+    window.addEventListener('resize',syncCaveat);
 
     const modes=pill('modes');modes.setAttribute('role','group');modes.setAttribute('aria-label','View');
     $('show-root').textContent='Lean inspector';$('show-root').title='Read the exact Lean declarations and their recorded references';
@@ -537,16 +572,25 @@
     const toggle=document.querySelector('.mobile-toggle');
     const more=el('details','more'),moreBody=el('div','more-body');
     const moreSummary=el('summary',null,'More ▾');
-    moreSummary.title='The remaining controls: arrows, text size, the proof-index download, the verification record, help and the navigation toggle';
+    moreSummary.title='The whole scope caveat, and the remaining controls: arrows, text size, the proof-index download, the verification record, help and the navigation toggle';
     more.append(moreSummary,moreBody);
     const compact=window.matchMedia('(max-width:760px)');
     const folded=[search,routes,scale,download,$('show-provenance'),$('show-help'),toggle];
+    /* The same eight controls wrap the same way for the same reason at 200%
+     * text on a desktop screen as at 375px on a phone, so they fold on both. */
+    const shouldFold=()=>compact.matches||document.documentElement.classList.contains('large-text');
     function layoutToolbar(){
-      if(compact.matches){bar.replaceChildren(modes,more);moreBody.append(...folded);}
+      /* The caveat is clamped to two lines wherever the controls are folded, so
+       * the panel that holds them prints the whole sentence as its first item. */
+      if(shouldFold()){bar.replaceChildren(modes,more);moreBody.append(caveatCopy,...folded);}
       else{more.open=false;bar.replaceChildren(modes,routes,scale,search,download,$('show-provenance'),$('show-help'),toggle);}
+      syncCaveat();
     }
     layoutToolbar();
     (compact.addEventListener?compact.addEventListener.bind(compact,'change'):compact.addListener.bind(compact))(layoutToolbar);
+    /* The text-size control is the offline template's; it announces a change of
+     * scale only by toggling .large-text on the root element. */
+    new MutationObserver(layoutToolbar).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
     document.addEventListener('pointerdown',e=>{if(more.open&&!more.contains(e.target))more.open=false;});
 
     const stats=el('div','stats');
@@ -690,15 +734,33 @@
       node.dataset.origin=origin;node.classList.add('o-'+origin);
     }
   }
-  /* readableKey() turns "receiptSha256" into "receipt Sha256"; these are the
-   * ones a reader should not have to decode. */
+  /* readableKey() in the offline template splits "receiptSha256" into
+   * "receipt Sha256" and stops there, so the provenance tab printed a column of
+   * half-humanised JSON keys: "end Line", "generated At", "verification Mode".
+   * EVERY key is humanised here — camelCase and _/- to spaces, lowercased, one
+   * capital at the front — and only the ones an English sentence would still
+   * get wrong are named. */
   const PROVENANCE_LABELS={'receipt sha256':'Receipt SHA-256','pdf sha256':'PDF SHA-256','aux sha256':'Aux SHA-256','build log sha256':'Build log SHA-256','source sha256':'Source SHA-256','index sha256':'Index SHA-256','report sha256':'Report SHA-256','curation sha256':'Curation SHA-256',id:'Paper',path:'Repository path',pages:'Pages'};
+  /* Words sentence case would mangle. "id" is expanded only as a whole word, so
+   * "identifier" and "invalid" keep their letters. */
+  const PROVENANCE_WORDS={sha256:'SHA-256',sha:'SHA',pdf:'PDF',aux:'Aux',id:'ID'};
+  function humanizeKey(text){
+    const words=text.replace(/([a-z0-9])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if(!words.length)return text;
+    const explicit=PROVENANCE_LABELS[words.join(' ')];
+    if(explicit)return explicit;
+    const out=words.map(word=>PROVENANCE_WORDS[word]||word);
+    /* Sentence case, unless the first word is an acronym already in its own
+     * casing ("PDF destination", not "Pdf destination"). */
+    if(out[0]===words[0])out[0]=out[0].charAt(0).toUpperCase()+out[0].slice(1);
+    return out.join(' ');
+  }
   function labelProvenance(){
     const panel=$('panel-provenance');if(!panel)return;
     for(const dt of panel.querySelectorAll('dt')){
       if(dt.dataset.labelled)continue;dt.dataset.labelled='1';
-      const better=PROVENANCE_LABELS[dt.textContent.trim().toLowerCase()];
-      if(better)dt.textContent=better;
+      const better=humanizeKey(dt.textContent);
+      if(better&&better!==dt.textContent)dt.textContent=better;
     }
     for(const a of panel.querySelectorAll('a[href="paper-revision.json"]'))
       if(!a.hasAttribute('download'))a.setAttribute('download','paper-revision.json');
@@ -755,18 +817,23 @@
     const mode=selectControl('graph-mode','View',[['overview','Mathematical proof map'],['source','Lean source references']],'overview',switchView,
       'Which drawing is on the canvas: the curated mathematical map of the papers, or the compiler-recorded source-reference graph around one Lean declaration');
     /* Four rows of controls above the canvas left the drawing 318px at
-     * 1440x900. They fold, and the fold is remembered for the session. */
+     * 1440x900, so they fold — and they start folded. Arriving in the source
+     * view, what a reader needs is the drawing; the filters are an answer to a
+     * question they have not asked yet. The fold is remembered for the session,
+     * so opening it once keeps it open, and the two actions that CHANGE a
+     * control in here open it themselves rather than moving it silently. */
     const controlsBox=el('details','source-controls-box');controlsBox.id='source-controls-box';controlsBox.hidden=true;
     const controlsSummary=el('summary',null,'Graph controls');
     controlsSummary.title='Show or hide the search, traversal and provenance filters for the source-reference graph';
     controlsBox.append(controlsSummary);
-    let controlsOpen=true;try{controlsOpen=sessionStorage.getItem('v4-source-controls')!=='closed';}catch(_){}
+    let controlsOpen=false;try{controlsOpen=sessionStorage.getItem('v4-source-controls')==='open';}catch(_){}
     controlsBox.open=controlsOpen;
     controlsBox.addEventListener('toggle',()=>{try{sessionStorage.setItem('v4-source-controls',controlsBox.open?'open':'closed');}catch(_){}});
+    revealControls=()=>{controlsBox.open=true;};
     const controls=el('div','source-controls');controls.id='source-controls';
     const searchWrap=el('div','graph-search-wrap'),search=el('input'),results=el('div','graph-search-results');search.id='graph-search';search.type='search';search.placeholder='Find a theorem or definition…';search.setAttribute('aria-label','Find graph declaration');results.id='graph-search-results';results.hidden=true;
     const choose=id=>{focus=id;selected=id;pathIds=null;results.hidden=true;search.value='';render();};
-    search.addEventListener('input',()=>{const query=search.value.toLowerCase().trim();results.replaceChildren();results.hidden=!query;if(!query)return;const matches=[...g.cards.values()].filter(d=>(d.id+' '+(d.plainEnglish||'')).toLowerCase().includes(query)).slice(0,30);for(const d of matches){const origin=originOf(d),row=btn(d.id,()=>choose(d.id),'graph-paper-link');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);results.append(row);}if(!matches.length)results.append(el('p',null,'No matching declaration.'));});
+    search.addEventListener('input',()=>{const query=search.value.toLowerCase().trim();results.replaceChildren();results.hidden=!query;if(!query)return;const matches=[...g.cards.values()].filter(d=>(d.id+' '+(d.plainEnglish||'')).toLowerCase().includes(query)).slice(0,30);for(const d of matches){const origin=originOf(d),row=btn(d.id,()=>choose(d.id),'graph-paper-link');row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);results.append(row);}if(!matches.length)results.append(el('p','nav-empty','No matching declaration. Try a shorter name or another module.'));});
     search.addEventListener('keydown',e=>{if(e.key==='Escape')results.hidden=true;if(e.key==='Enter'){const first=results.querySelector('button');if(first)first.click();}});searchWrap.append(search,results);controls.append(searchWrap);
     controls.append(selectControl('graph-direction','Follow',[['out','References used'],['in','Declarations using this'],['both','Both directions']],'out',v=>{options.direction=v;pathIds=null;render();},
         'Which way to walk the recorded references from the focused declaration: the names it uses, the declarations that use it, or both'),

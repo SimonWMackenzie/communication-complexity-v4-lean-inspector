@@ -15,7 +15,10 @@
   const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n; };
   /* "1 paper locations" is a bug in the copy, not a rounding detail. */
   const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
-  /* Site prose is US-spelled; the recorded paper titles are not edited. */
+  /* Site prose is US-spelled; the recorded paper titles are not edited. Every
+   * place that PRINTS a paper title goes through this one relabel — the tracer
+   * select here and the brand subtitle in graph.js — so the page never shows
+   * "Formalisation" beside "Formalization". */
   const paperOptionLabel = paper => paper.id === 'formal' ? 'Formalization-facing paper' : paper.id === 'reader' ? 'Reader-facing paper' : paper.title;
   const button = (text, fn, cls) => {const b=el('button',cls,text);b.type='button';b.addEventListener('click',fn);return b;};
   const $ = id => document.getElementById(id);
@@ -231,6 +234,6 @@
     // Re-render statement once now that the reverse-link integration is ready.
     if(mode==='lean')api.selectDeclaration(new URLSearchParams(incoming.slice(1)).get('decl')||api.DATA.root,'statement',false);
   }
-  window.V4Trace={addLinks,openLean,selectAnchor,setMode,refresh,provenanceCard};
+  window.V4Trace={addLinks,openLean,selectAnchor,setMode,refresh,provenanceCard,paperOptionLabel};
   document.addEventListener('v4-inspector-ready',start,{once:true});
 })();
