@@ -20,7 +20,8 @@ async function checkPaperGeometry(page,label){
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:8764/',{waitUntil:'load',timeout:120000});
   await page.waitForFunction(()=>window.V4Graph&&window.V4Trace,null,{timeout:120000});
-  await page.locator('#open-paper-trace').click(); await page.waitForFunction(()=>document.querySelector('.paper-highlight.selected'));
+  await page.waitForFunction(()=>document.querySelector('.paper-highlight.selected'));
+  check('landing is the reader paper at its main theorem',await page.locator('#paper-workspace').isVisible()&&/paper=reader&anchor=thm%3Areader-main/.test(page.url()));
   check('paper opens without fatal errors',!(await page.locator('#fatal').isVisible()));
   check('reader main theorem is on its actual PDF page',(await page.locator('#trace-page').inputValue())==='2');
   check('selected paper highlight is in the reading viewport',await page.evaluate(()=>{const h=document.querySelector('.paper-highlight.selected').getBoundingClientRect(),f=document.getElementById('paper-scroll').getBoundingClientRect();return h.top>=f.top&&h.bottom<=f.bottom;}));

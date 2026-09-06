@@ -927,9 +927,11 @@
     window.addEventListener('hashchange',()=>{const p=new URLSearchParams(location.hash.slice(1));if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'));});
     window.V4Graph={open,graph:g,getView:()=>view,origin:originOf};
     window.V4Trace.refresh();
+    // Landing: a hashless visit stays on the paper tracer at the reader's main theorem,
+    // which trace.js has already selected (and written as #paper=reader&anchor=thm:reader-main).
+    // Only an explicit #view=graph hash opens the dependency explorer on load.
     const p=new URLSearchParams(initialHash.slice(1));
     if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'));
-    else if(!p.has('anchor')&&!p.has('decl')&&!p.has('paper'))open('overview');
   }
   document.addEventListener('v4-inspector-ready',start,{once:true});
 })();

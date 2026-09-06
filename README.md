@@ -135,7 +135,9 @@ origin and can filter by it; the Lean inspector shows an origin badge and a
 coloured tick per navigation row; the paper tracer's highlight colours follow
 the correspondence classification and are explained by a key above the pages.
 
-The landing view is the mathematical proof map.
+The landing view is the reader-facing paper opened at its main theorem
+(Theorem 1.1, `#paper=reader&anchor=thm:reader-main`); the proof map and the
+Lean inspector are one click away, and `#view=graph` opens the map directly.
 
 ## Comparative QA revision
 
