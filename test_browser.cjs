@@ -33,6 +33,8 @@ async function checkPaperGeometry(page,label){
   check('external input is labelled honestly',(await page.locator('#graph-detail').innerText()).includes('do not prove its existence'));
   await page.locator('#graph-mode').selectOption('source');
   check('source relation distinguished',(await page.locator('#graph-subtitle').innerText()).includes('not dependencies extracted from kernel proof terms'));
+  // The source-mode controls live in a <details> that starts closed; open it before driving them.
+  await page.locator('#graph-workspace details').first().evaluate(d=>{d.open=true;});
   await page.locator('#graph-grouped').uncheck();
   await page.locator('#graph-depth').selectOption('3');
   await page.locator('#graph-limit').selectOption('40');
