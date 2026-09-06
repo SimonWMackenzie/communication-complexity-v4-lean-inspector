@@ -1624,12 +1624,13 @@ body:not(.mode-graph) .topbar .routes{display:none}
   color:var(--muted);
 }
 .tkey .k{display:flex;align-items:center;gap:var(--sp-2);white-space:nowrap}
+/* The swatch is the highlight in miniature: same border, same kind of fill. */
 .tkey .kb{
   width:11px;
   height:11px;
   border-radius:2px;
   border:1.5px solid var(--tick,var(--faint));
-  background:color-mix(in srgb,var(--tick,var(--faint)) 18%,transparent);
+  background:color-mix(in srgb,var(--tick,var(--faint)) 20%,transparent);
 }
 .tkey .k.is-unmapped .kb{border-style:dotted;background:transparent}
 
@@ -1647,34 +1648,44 @@ body:not(.mode-graph) .topbar .routes{display:none}
 /* =============================================================================
    §16  PAPER VIEW — HIGHLIGHTS
    ========================================================================== */
-/* Paint only. Recorded rectangles frequently touch or overlap, so resting
-   highlights are outline-only: adjacent outlines stay legible where stacked
-   fills would compound into a blotch. trace.js additionally clips the lower
-   edge of a box that would cover the next one; the border box is never moved. */
+/* Paint only. A highlight now covers a whole printed statement or display, so
+   it is filled: the tint marks the region the way a marker pen would, and the
+   page text still reads through it. A statement that contains display boxes
+   takes a lighter fill (.has-inner, set by trace.js) so its inner rows read as
+   inner rather than as a second layer of the same colour. Sibling boxes that
+   genuinely overlap are still clipped in trace.js; the border box never moves. */
 
 .paper-highlight{
-  border:1.5px solid var(--hl,var(--hl-statement));
+  border:1.5px solid color-mix(in srgb,var(--hl,var(--hl-statement)) 92%,transparent);
   border-radius:3px;
-  background:transparent;
+  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 14%,transparent);
+  transition:background .12s,box-shadow .12s;
 }
+.paper-highlight.has-inner{background:color-mix(in srgb,var(--hl,var(--hl-statement)) 10%,transparent)}
 .paper-highlight:hover{
-  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 22%,transparent);
-  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent);
+  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 24%,transparent);
+  box-shadow:0 0 0 2px rgba(167,139,250,.55),inset 0 0 0 2px rgba(167,139,250,.35);
 }
 /* Trimmed boxes are clipped to their painted region, so an outward focus ring
    is removed with the trim and the box shows no focus at all. It is inset. */
 .paper-highlight:focus-visible{
   outline:none;
-  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 22%,transparent);
+  background:color-mix(in srgb,var(--hl,var(--hl-statement)) 24%,transparent);
   box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 70%,transparent);
 }
-/* The ring is inset: an outward one is painted outside the border box, which
+/* The rings are inset: an outward one is painted outside the border box, which
    is exactly the region trace.js removes with clip-path, so a trimmed box
-   would show no halo at all. */
+   would show no halo at all. The pulse runs twice and then rests; the blanket
+   reduced-motion rule in §22 removes it. */
+@keyframes hlpulse{
+  0%,100%{box-shadow:inset 0 0 0 2.5px var(--accent),inset 0 0 22px rgba(167,139,250,.35)}
+  50%{box-shadow:inset 0 0 0 2.5px var(--accent),inset 0 0 30px rgba(167,139,250,.62)}
+}
 .paper-highlight.selected{
   border:2px solid var(--accent);
   background:color-mix(in srgb,var(--accent) 20%,transparent);
-  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent);
+  box-shadow:inset 0 0 0 2.5px var(--accent),inset 0 0 22px rgba(167,139,250,.35);
+  animation:hlpulse .6s ease-in-out 2;
 }
 .paper-highlight.statement,
 .paper-highlight.definition{--hl:var(--hl-statement)}
@@ -1683,14 +1694,16 @@ body:not(.mode-graph) .topbar .routes{display:none}
 .paper-highlight.external.selected{
   border-color:var(--axiom);
   background:color-mix(in srgb,var(--axiom) 22%,transparent);
-  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--axiom) 45%,transparent);
+  box-shadow:inset 0 0 0 2.5px var(--axiom),inset 0 0 22px color-mix(in srgb,var(--axiom) 40%,transparent);
+  animation:none;
 }
 .paper-highlight.unmapped{
   --hl:var(--hl-unmapped);
   border-style:dotted;
+  background:color-mix(in srgb,var(--hl-unmapped) 8%,transparent);
   opacity:.6;
 }
-.paper-highlight.context{--hl:var(--hl-context);opacity:.7}
+.paper-highlight.context{--hl:var(--hl-context);opacity:.75}
 .paper-highlight.unmapped:hover,
 .paper-highlight.context:hover,
 .paper-highlight.unmapped:focus-visible,

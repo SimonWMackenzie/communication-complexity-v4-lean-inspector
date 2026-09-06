@@ -37,11 +37,17 @@ reviewed update, not silently reading a different proof.
   one further curated entry identifies contextual evidence rather than a theorem.
 - The complete compiled PDF anchor index also exposes locations without
   curated counterparts, clearly labelled as such rather than hidden.
-- Highlights mark the location/beginning of a labelled statement or equation,
-  not the boundary of a complete proof. Physical pages and coordinates come
-  from PDF named destinations corresponding to compiled AUX labels. Numbered
-  statement headers are verified in the PDF text, correcting destinations
-  that LaTeX placed before a page break; the original destination page is retained.
+- Highlights box the printed extent of a labelled statement or display, from
+  its header to its last line on that page; a statement continuing onto the
+  next page is cut at the page end. They do not delimit or certify a proof.
+  Physical pages and coordinates come from PDF named destinations corresponding
+  to compiled AUX labels. Numbered statement headers are verified in the PDF
+  text, correcting destinations that LaTeX placed before a page break; the
+  original destination page is retained. The extent itself is measured from the
+  PDF's own printed lines, and, where a statement environment ends in prose,
+  confirmed against that environment's closing words in the manuscript source.
+  Each anchor records which rule ended it (`extent.terminator`), whether the
+  source words matched, and whether the box was cut at the page end.
 - Every mapping is mathematical interpretation, not a Lean certificate.
   Definitions, statement correspondences, assembled proofs, external inputs,
   and unmapped context are separately labelled.
@@ -86,14 +92,15 @@ The interface was unified into one token-driven design system
 (`design.css`: one type scale, one radius scale, one control height, one
 focus ring, one list-row and one badge component shared by the paper, graph
 and Lean views; `trace.css` now carries layout only). Overlapping paper
-highlights are resolved for display in `trace.js`: where two recorded
-location boxes intersect, the upper box is trimmed at the next box's top edge
-with `clip-path`, so the visible boxes and their click targets are disjoint.
-The recorded coordinates, the proof snapshot, the papers and every mapping are
-unchanged; the trimming is presentation only and is stated in the detail
-panel. Measured on all 372 recorded locations: 56 overlapping pairs on 27
-pages before, 0 visible overlaps after, with every box keeping at least 39%
-of its recorded height. Metadata text now meets WCAG AA contrast.
+highlights are resolved for display in `trace.js`: where two **sibling** boxes
+intersect, the upper box is trimmed at the next box's top edge with
+`clip-path`, so the visible boxes and their click targets are disjoint.
+Nesting is not an overlap and is never trimmed: a labelled display row inside a
+theorem is inside that theorem, so the inner box is left whole and the outer
+one is marked so it can be painted a shade lighter. The recorded coordinates,
+the proof snapshot, the papers and every mapping are unchanged; the trimming is
+presentation only and is stated in the detail panel. Metadata text now meets
+WCAG AA contrast.
 
 ## Provenance revision
 
@@ -285,8 +292,9 @@ Measured after the pass, at 1440x900: paper and graph views both have
 canvas 346px open / 484px folded, with no workspace scrollbar in either; the
 footer is 29px. At 375x812 the header is 169px in all three views with no
 horizontal overflow. At 200% text the canvas is exactly 70vh. The clip-aware
-highlight overlap probe is 0 on both papers, mapped and unmapped, and the
-selected highlight's border box still equals its recorded coordinates.
+highlight overlap probe is 0 for sibling boxes on both papers, mapped and
+unmapped (nested pairs are excluded by design), and the selected highlight's
+border box still equals its recorded coordinates.
 
 ## Final polish
 

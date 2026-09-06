@@ -67,29 +67,39 @@
   function replaceHash(anchor) {try{history.replaceState(null,'','#'+new URLSearchParams({paper:anchor.paperId,anchor:anchor.label}));}catch(_){}}
   function defaultAnchor(paper) {return trace.anchors.find(a=>a.paperId===paper&&(a.label==='thm:reader-main'||a.label==='thm:finite-main'))||trace.anchors.find(a=>a.paperId===paper);}
   /* Recorded location boxes are evidence: each one is placed from its stored
-   * rectangle and is never moved. A box's height is a heuristic extension below
-   * the line it anchors, so on aligned equation displays one box can cover the
-   * top of the next, and a short final row can sit inside its predecessor. That
-   * is resolved for DISPLAY ONLY: the covering box is clipped back to the next
-   * box's top edge (or, for two boxes on one line, to the next box's left edge).
-   * clip-path also clips hit-testing, so both the painted region and the click
-   * target become disjoint, while the element's border box - which a regression
-   * test compares against the stored coordinates - is left exactly as recorded.
-   * A trim never removes more than 82% of a box, so every anchor keeps a
-   * visible, clickable sliver; --depth additionally paints smaller boxes above
-   * larger ones as a safety net for any residual overlap. */
-  const OVERLAP_EPS=0.004,OVERLAP_GAP=0.002,MIN_VISIBLE=0.18;
+   * rectangle and is never moved. Each box covers the printed extent of one
+   * statement or display, so a labelled display row inside a theorem is now
+   * NESTED inside that theorem's box by design - that is the mathematics, not
+   * a collision, and neither box is trimmed for it. The outer box is marked
+   * (.has-inner) so it can be painted a shade lighter, and --depth keeps the
+   * smaller box above the larger one so the inner row stays clickable.
+   * Genuine SIBLING overlaps - two rows whose recorded rectangles cross
+   * because the printed rows themselves cross - are still resolved for DISPLAY
+   * ONLY: the upper box is clipped back to the lower box's top edge (or, for
+   * two boxes on one line, to the next box's left edge). clip-path also clips
+   * hit-testing, so both the painted region and the click target become
+   * disjoint, while the element's border box - which a regression test compares
+   * against the stored coordinates - is left exactly as recorded. A trim never
+   * removes more than 82% of a box, so every anchor keeps a visible,
+   * clickable sliver. */
+  const OVERLAP_EPS=0.004,OVERLAP_GAP=0.002,MIN_VISIBLE=0.18,NESTED=0.9;
   function separateHighlights(boxes) {
     const meet=(a,b)=>Math.min(a.x1,b.x1)>Math.max(a.x0,b.x0)&&Math.min(a.y1,b.y1)>Math.max(a.y0,b.y0);
-    for(const box of boxes){box.cutBottom=box.rect.y1;box.cutRight=box.rect.x1;}
+    const area=r=>(r.x1-r.x0)*(r.y1-r.y0);
+    const shared=(a,b)=>Math.max(0,Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0))*Math.max(0,Math.min(a.y1,b.y1)-Math.max(a.y0,b.y0));
+    /* b sits inside a: a is the larger box and holds almost all of b. */
+    const holds=(a,b)=>area(a)>area(b)&&shared(a,b)>=NESTED*area(b);
+    for(const box of boxes){box.cutBottom=box.rect.y1;box.cutRight=box.rect.x1;box.outer=false;}
     for(const a of boxes)for(const b of boxes){
       if(a===b||!meet(a.rect,b.rect))continue;
+      if(holds(a.rect,b.rect)){a.outer=true;continue;}
+      if(holds(b.rect,a.rect))continue;
       if(b.rect.y0-a.rect.y0>OVERLAP_EPS)a.cutBottom=Math.min(a.cutBottom,b.rect.y0-OVERLAP_GAP);
       else if(Math.abs(b.rect.y0-a.rect.y0)<=OVERLAP_EPS&&b.rect.x0-a.rect.x0>OVERLAP_EPS)a.cutRight=Math.min(a.cutRight,b.rect.x0-OVERLAP_GAP);
     }
-    const area=box=>(box.rect.x1-box.rect.x0)*(box.rect.y1-box.rect.y0);
-    [...boxes].sort((p,q)=>area(q)-area(p)).forEach((box,index)=>box.button.style.setProperty('--depth',String(2+Math.min(index,120))));
+    [...boxes].sort((p,q)=>area(q.rect)-area(p.rect)).forEach((box,index)=>box.button.style.setProperty('--depth',String(2+Math.min(index,120))));
     for(const box of boxes){
+      box.button.classList.toggle('has-inner',box.outer);
       const r=box.rect,width=r.x1-r.x0,height=r.y1-r.y0;
       const bottom=Math.max(box.cutBottom,r.y0+MIN_VISIBLE*height),right=Math.max(box.cutRight,r.x0+MIN_VISIBLE*width);
       if(bottom>=r.y1&&right>=r.x1)continue;
@@ -173,7 +183,7 @@
     if(other.length){const details=el('details');details.append(el('summary',null,'Related locations in the other paper ('+other.length+')'));for(const a of other)details.append(button(a.title,()=>selectAnchor(a.id),'dep-link'));details.append(el('p','trace-tooltip','These locations share listed Lean components; this is navigation, not a separately certified equivalence.'));host.append(details);}
     const source=el('details');source.append(el('summary',null,'Location and provenance'));api.renderValue({paperLabel:anchor.label,physicalPdfPage:anchor.page,printedPage:anchor.printedPage,pdfDestination:anchor.destination,compiledDestinationPage:anchor.compiledDestinationPage,locationVerification:anchor.locationVerification,source:anchor.source,pdfSha256:activePaper.pdfSha256,auxSha256:activePaper.auxSha256},source);host.append(source);
     if(api.DATA.meta.paperRevision)source.append(el('p','trace-tooltip',api.DATA.meta.paperRevision.notice));
-    host.append(el('p','trace-tooltip','Highlights mark the beginning/location of a labelled statement or equation. They do not delimit a whole proof. Where two recorded location boxes overlap, the upper box is trimmed at the next box\'s top edge for display; the recorded coordinates are unchanged. Paper-to-Lean correspondence is curated; compiler-derived references remain available in the Lean view.'));
+    host.append(el('p','trace-tooltip','Highlights box the printed extent of a labelled statement or display, from its header to its last line on that page; a statement continuing onto the next page is cut at the page end. They do not delimit or certify proofs. A labelled display inside a statement sits nested inside that statement\'s box; where two sibling boxes overlap, the upper one is trimmed for display and the recorded coordinates are unchanged. Paper-to-Lean correspondence is curated; compiler-derived references remain available in the Lean view.'));
     const a=el('a',null,'Open the original PDF (selectable and searchable text)');a.href=activePaper.pdf;a.target='_blank';a.rel='noopener noreferrer';host.append(a);
   }
   function openLean(id,tab='statement'){setMode('lean');api.selectDeclaration(id,tab);$('main-content').scrollIntoView({block:'start'});}
