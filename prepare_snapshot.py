@@ -87,11 +87,21 @@ def locate_label_sources(directory):
 
 ### Printed extent ############################################################
 # A highlight boxes what a labelled statement or display actually occupies on
-# its page: from its printed header line to its last printed line. The PDF's
-# own text geometry supplies the lines and the terminator; where a statement
-# environment ends in prose, the manuscript source supplies its closing words
-# so the box ends where the author ended the statement, not where a font
-# changes. None of this infers, delimits or certifies a proof.
+# its page. A statement is grown from its printed header line to its last
+# printed line, and where the environment ends in prose the manuscript source
+# supplies its closing words, so the box ends where the author ended the
+# statement rather than where a font changes. A display is not counted in
+# lines at all: it is taken as the connected block of rendered ink its printed
+# number claims, because a row containing a fraction, a large operator with
+# limits or a case brace is taller than one line of text and no line height
+# measures it. None of this infers, delimits or certifies a proof.
+
+INK_DPI = 300                # resolution the printed ink is measured at
+INK_LEVEL = 200              # a pixel at least this dark is ink
+SLIVER = 2.0                 # thinner than any printed row: a dot, accent or rule
+FLUSH = 4.0                  # how near the margin a row starts to be running text
+INDENT = 36.0                # the deepest indent running text is set at here
+FOLIO = (35.0, 722.0)        # the printed body, excluding running head and folio
 
 TEXT_FONT = re.compile(r"LM(?:Roman|Sans|Mono|TypeWriter)", re.I)
 SLANTED = re.compile(r"Italic|Slanted|Oblique", re.I)
@@ -122,7 +132,7 @@ def visual_lines(page):
     grown a line at a time.
     """
     typed = page.extract_words(x_tolerance=2, y_tolerance=3, extra_attrs=["fontname", "size"])
-    inside = lambda word: 35 < word["top"] < 722  # 722 excludes only the folio.
+    inside = lambda word: FOLIO[0] < word["top"] < FOLIO[1]  # excludes only head and folio
     rows = []
     for word in sorted((w for w in typed if inside(w)), key=lambda w: (round(w["top"], 1), w["x0"])):
         if rows and abs(rows[-1]["top"] - word["top"]) <= 3:
@@ -184,6 +194,127 @@ def visual_lines(page):
 def lettered(line):
     return [word for word in line["words"]
             if word["size"] >= 9 and TEXT_FONT.search(word["fontname"]) and any(c.isalpha() for c in word["text"])]
+
+def printed_rows(page):
+    """The page's printed word rows, one per printed baseline and unfolded.
+
+    Unlike visual_lines these are not merged into reading lines: a display's
+    numerator prints as its own row and must stay separate from the sentence
+    beside it, whose last word may sit at the same height.
+    """
+    rows = []
+    typed = page.extract_words(x_tolerance=2, y_tolerance=3, extra_attrs=["fontname", "size"])
+    for word in sorted((w for w in typed if FOLIO[0] < w["top"] < FOLIO[1]),
+                       key=lambda w: (round(w["top"], 1), w["x0"])):
+        if rows and abs(rows[-1]["top"] - word["top"]) <= 3:
+            rows[-1]["words"].append(word)
+            rows[-1]["bottom"] = max(rows[-1]["bottom"], word["bottom"])
+        else:
+            rows.append({"top": word["top"], "bottom": word["bottom"], "words": [word]})
+    for row in rows:
+        row["x0"] = min(word["x0"] for word in row["words"])
+        row["x1"] = max(word["x1"] for word in row["words"])
+    return rows
+
+def running_text(row, margin, width):
+    """Whether a printed row is running text rather than a row of a display.
+
+    Text is set flush to the margin, or one indent in from it and opening with
+    a word; a display row is set in from the margin and opens with
+    mathematics. A row ending in a number at the right margin is usually a
+    numbered display, but a justified sentence whose last word is a reference
+    to one ends the same way, so such a row counts as text only when it also
+    starts flush at the margin and opens with a word.
+    """
+    opening = min(row["words"], key=lambda word: word["x0"])
+    worded = bool(opening["size"] >= 9 and TEXT_FONT.search(opening["fontname"])
+                  and any(character.isalpha() for character in opening["text"]))
+    if any(EQUATION_TAG.fullmatch(word["text"]) and word["x1"] > width - 90 for word in row["words"]):
+        return bool(worded and row["x0"] <= margin + FLUSH)
+    return bool(row["x0"] <= margin + FLUSH or (worded and row["x0"] <= margin + INDENT))
+
+def ink_runs(mask):
+    """Every maximal run of inked pixel rows in a rendered page or column strip."""
+    profile = mask.convert("F").resize((1, mask.height), Image.BOX)
+    inked = list(getattr(profile, "get_flattened_data", profile.getdata)())
+    runs, start = [], None
+    for y in range(mask.height + 1):
+        on = y < mask.height and inked[y] > 0.0
+        if on and start is None:
+            start = y
+        elif not on and start is not None:
+            runs.append((start, y))
+            start = None
+    return runs
+
+def fold_slivers(bands):
+    """A stray dot, accent or rule is not a printed row of its own.
+
+    An i-dot separated from its word by one blank pixel row, or a fraction
+    rule clear of both numerator and denominator, rejoins the row it touches;
+    a sliver touching nothing is not a row at all and is dropped.
+    """
+    while True:
+        thin = next((i for i, band in enumerate(bands)
+                     if band["bottom"] - band["top"] < SLIVER), None)
+        if thin is None:
+            return bands
+        band = bands.pop(thin)
+        gaps = [(band["top"] - bands[thin - 1]["bottom"], thin - 1)] if thin else []
+        if thin < len(bands):
+            gaps.append((bands[thin]["top"] - band["bottom"], thin))
+        touching = [gap for gap in gaps if gap[0] < SLIVER]
+        if touching:
+            host = bands[min(touching)[1]]
+            host["top"] = min(host["top"], band["top"])
+            host["bottom"] = max(host["bottom"], band["bottom"])
+            host["x0"] = min(host["x0"], band["x0"])
+            host["x1"] = max(host["x1"], band["x1"])
+
+def page_ink(page, rendered, margin):
+    """The page's display ink in bands, and the running text taken out of it.
+
+    Running text is masked first, over its own columns only, so the last line
+    of an introducing sentence never joins the display it precedes even where
+    the two print less than a point apart. What remains is banded: one band
+    per connected block of display ink, whatever its height.
+    """
+    with Image.open(rendered) as image:
+        mask = image.convert("L").point(lambda level: 255 if level < INK_LEVEL else 0)
+        scale = page.height / mask.height
+        at = lambda point, limit: max(0, min(limit, int(round(point / scale))))
+        blocks = []
+        for row in printed_rows(page):
+            if not running_text(row, margin, page.width):
+                continue
+            left, right = at(row["x0"] - 1, mask.width), at(row["x1"] + 1, mask.width)
+            if left >= right:
+                continue
+            strip = mask.crop((left, 0, right, mask.height))
+            covered = [(a, b) for a, b in ink_runs(strip)
+                       if a * scale < row["bottom"] and row["top"] < b * scale]
+            if not covered:
+                continue
+            top, bottom = covered[0][0], covered[-1][1]
+            blocks.append((top * scale, bottom * scale))
+            mask.paste(0, (left, top, right, bottom))
+        bands = []
+        for a, b in ink_runs(mask):
+            if not FOLIO[0] < a * scale < FOLIO[1]:
+                continue
+            box = mask.crop((0, a, mask.width, b)).getbbox()
+            bands.append({"top": a * scale, "bottom": b * scale,
+                          "x0": box[0] * scale, "x1": box[2] * scale, "tag": None})
+    fold_slivers(bands)
+    for word in page.extract_words(x_tolerance=2, y_tolerance=3):
+        if not (EQUATION_TAG.fullmatch(word["text"]) and word["x1"] > page.width - 90):
+            continue
+        middle = (word["top"] + word["bottom"]) / 2
+        for band in bands:
+            if band["top"] - 1 <= middle <= band["bottom"] + 1:
+                band["tag"] = word["text"]
+                break
+    return bands, sorted(blocks)
 
 def page_measures(lines):
     """This page's left text margin and its printed body-line pitch.
@@ -321,79 +452,126 @@ def statement_extent(lines, facts, index, margin, pitch, blockers, closing):
         return styled, reason, False
     return stop - 1, terminator, False
 
-def display_extent(lines, facts, index, margin, pitch, blockers, rows):
-    """Grow a display box over the rows of one labelled display only.
+def display_seat(model, number, index, inherited):
+    """The ink band carrying this display's printed number.
 
-    A printed number sits on exactly one row of its display and ends it, so a
-    box that already holds the number is complete; a box that does not reaches
-    back over unnumbered rows until it finds one.
+    The printed number is the display's own identifier, so it locates the
+    display directly; where a page prints the same number twice, the one
+    nearest the compiled location is this display's. A display printed
+    without a number - the two unnumbered anchors whose AUX entry inherits a
+    neighbour's number - is seated on the band holding the row its verified
+    location points at instead.
     """
-    start, end, terminator, indent = index, index, "page-end", margin + 17
-    numbered = facts[index]["tagged"]
-    while start:
-        earlier, fact = start - 1, facts[start - 1]
-        if earlier in blockers or earlier in rows or fact["prose"] or fact["aside"]:
+    base = model["lines"][index]["base"]
+    tag = None if inherited else "(%s)" % number
+    seats = [i for i, band in enumerate(model["bands"]) if tag and band["tag"] == tag]
+    if seats:
+        return min(seats, key=lambda i: abs(model["bands"][i]["top"] - base)), "ink-cluster"
+    holding = [i for i, band in enumerate(model["bands"])
+               if band["top"] - 1 <= base <= band["bottom"] + 1]
+    require(holding, "No printed ink at a display's verified location")
+    return holding[0], "ink-cluster-located"
+
+def display_cluster(model, seat):
+    """The block of display ink one printed number claims.
+
+    Running text closes a block of display ink. Inside a block every printed
+    number owns its own row, and a row printed without one - a row of an
+    aligned display set \\nonumber, a large operator's limit line, a case
+    brace - belongs to the number nearest to it.
+    """
+    bands, blocks = model["bands"], model["blocks"]
+    parted = lambda i, j: any(bands[i]["bottom"] - 1 < close and open_ < bands[j]["top"] + 1
+                              for open_, close in blocks)
+    first, last = seat, seat
+    while first and not parted(first - 1, first):
+        first -= 1
+    while last + 1 < len(bands) and not parted(last, last + 1):
+        last += 1
+    owners = sorted({i for i in range(first, last + 1) if bands[i]["tag"]} | {seat})
+    reach = lambda i: bands[seat]["top"] - bands[i]["bottom"] if i < seat else \
+        bands[i]["top"] - bands[seat]["bottom"]
+    start, end = seat, seat
+    for index in range(seat - 1, first - 1, -1):
+        rival = max((o for o in owners if o < index), default=None)
+        if index in owners or (rival is not None
+                               and bands[index]["top"] - bands[rival]["bottom"] < reach(index)):
             break
-        if fact["heading"] or fact["header"] or fact["proof"]:
+        start = index
+    for index in range(seat + 1, last + 1):
+        rival = min((o for o in owners if o > index), default=None)
+        if index in owners or (rival is not None
+                               and bands[rival]["top"] - bands[index]["bottom"] < reach(index)):
             break
-        if lines[earlier]["x0"] <= margin + 20 or fact["words"] >= 3:
-            break                                    # running text, not a centred row
-        if lines[start]["top"] - lines[earlier]["top"] > 1.9 * pitch:
-            break
-        if fact["tagged"] and numbered:              # a second number: another display
-            break
-        start = earlier
-        if fact["tagged"]:                           # that number is this display's
-            numbered = True
-            break
-    if numbered:
-        return start, index, "numbered-row", False
-    for following in range(index + 1, len(lines)):
-        if following in rows:
-            terminator = "next-display"
-            break
-        if following in blockers or facts[following]["header"]:
-            terminator = "next-statement"
-            break
-        if facts[following]["proof"]:
-            terminator = "proof"
-            break
-        if facts[following]["heading"]:
-            terminator = "section-heading"
-            break
-        if (facts[following]["prose"] or facts[following]["aside"]
-                or paragraph_start(lines, facts, following, indent, pitch)):
-            terminator = "margin-text"
-            break
-        if lines[following]["top"] - lines[following - 1]["top"] > 1.9 * pitch:
-            terminator = "display-gap"
-            break
-        end = following
-    return start, end, terminator, False
+        end = index
+    # Running text is masked out of the ink, so a block that is the last one
+    # on its page has still ended in text if any is printed below it.
+    ended = ("next-number" if end + 1 < len(bands) and not parted(end, end + 1)
+             else "running-text" if any(open_ > bands[end]["bottom"] for open_, _ in blocks)
+             else "page-end")
+    return start, end, ended
 
 def continues_overleaf(following, kind, indent):
     """Whether the page after a box that reached the page end carries more of it.
 
     A statement continues unless the next page opens something else: a proof,
-    a heading, another statement, or a fresh indented paragraph. A display is
-    never continued by prose, only by another display row.
+    a heading, another statement, or a fresh indented paragraph. A display
+    continues only if the next page opens with display ink; a line of running
+    text printed above that ink - the sentence introducing the next display -
+    means this one ended at the foot of its own page.
     """
     if not following or not following["lines"]:
         return False
-    opening, line = following["facts"][0], following["lines"][0]
     if kind in DISPLAY_KINDS:
-        return not opening["prose"] and not opening["aside"] and not opening["heading"]
+        if not following["bands"]:
+            return False
+        opens = following["bands"][0]["top"]
+        return not any(start < opens for start, _ in following["blocks"])
+    opening, line = following["facts"][0], following["lines"][0]
     if opening["heading"] or opening["header"] or opening["proof"]:
         return False
     return not (abs(line["x0"] - indent) <= 3 and opening["words"] >= 2)
 
-def page_model(page):
-    """One page's printed lines with the measures every box rule reads."""
+def page_model(page, rendered):
+    """One page's printed lines and printed ink, with the measures box rules read."""
     lines = visual_lines(page)
     margin, pitch = page_measures(lines)
+    bands, blocks = page_ink(page, rendered, margin)
     return {"lines": lines, "margin": margin, "pitch": pitch,
+            "bands": bands, "blocks": blocks,
+            "plain": [word for word in page.extract_words(x_tolerance=2, y_tolerance=3)
+                      if FOLIO[0] < word["top"] < FOLIO[1]],
             "width": page.width, "height": page.height,
             "facts": [line_facts(line, margin, page.width) for line in lines]}
+
+def band_text(model, band):
+    """The readable text of one printed ink band."""
+    inside = [word for word in model["plain"]
+              if band["top"] - 1 <= (word["top"] + word["bottom"]) / 2 <= band["bottom"] + 1]
+    inside.sort(key=lambda word: (round(word["top"] / 3), word["x0"]))
+    return " ".join(word["text"] for word in inside)
+
+def display_box(model, start, end):
+    """The rectangle around a run of display ink, kept clear of its neighbours.
+
+    Three points of breathing room, but never past the halfway point to the
+    printed row on either side, so a highlight never reaches into a
+    neighbouring display or into the sentence that introduces this one.
+    """
+    bands, blocks = model["bands"], model["blocks"]
+    covered = bands[start:end + 1]
+    top = min(band["top"] for band in covered)
+    bottom = max(band["bottom"] for band in covered)
+    above = max([bands[start - 1]["bottom"] if start else 0.0]
+                + [close for _, close in blocks if close <= top])
+    below = min([bands[end + 1]["top"] if end + 1 < len(bands) else model["height"]]
+                + [open_ for open_, _ in blocks if open_ >= bottom])
+    x0 = min(band["x0"] for band in covered) - 3
+    x1 = max(band["x1"] for band in covered) + 3
+    y0 = min(top, max(top - 3, (top + above) / 2))
+    y1 = max(bottom, min(bottom + 3, (bottom + below) / 2))
+    return {"x0": max(0, x0 / model["width"]), "y0": max(0, y0 / model["height"]),
+            "x1": min(1, x1 / model["width"]), "y1": min(1, y1 / model["height"])}
 
 def anchor_line(model, kind, top):
     """The printed line a compiled destination points at.
@@ -416,22 +594,30 @@ def anchor_line(model, kind, top):
         index += 1
     return index
 
-def anchor_extent(model, index, kind, blockers, rows, closing, following):
-    """The printed rectangle, header text and extent record for one anchor."""
+def anchor_extent(model, index, kind, number, blockers, closing, following):
+    """The printed rectangle, header text and extent record for one anchor.
+
+    A display is boxed from the ink its printed number claims; a statement or
+    heading is boxed from the printed lines it occupies.
+    """
     lines, facts = model["lines"], model["facts"]
     margin, pitch = model["margin"], model["pitch"]
+    if kind in DISPLAY_KINDS:
+        seat, method = display_seat(model, number, index, kind == "unnumbered-equation")
+        start, end, terminator = display_cluster(model, seat)
+        cut = terminator == "page-end" and continues_overleaf(following, kind, margin + 17)
+        extent = {"lines": end - start + 1, "terminator": terminator,
+                  "sourceEndMatched": False, "truncatedAtPageEnd": cut, "method": method}
+        return display_box(model, start, end), band_text(model, model["bands"][seat]), extent
     if kind in HEADING_KINDS:
         start, end, terminator, matched = index, index, "heading-line", False
-    elif kind in DISPLAY_KINDS:
-        start, end, terminator, matched = display_extent(lines, facts, index, margin, pitch, blockers, rows)
     else:
         start = index
         end, terminator, matched = statement_extent(lines, facts, index, margin, pitch, blockers, closing)
     covered = lines[start:end + 1]
     x0 = min(line["x0"] for line in covered) - 3
     x1 = max(line["x1"] for line in covered) + 3
-    # Three points of breathing room, but never into a neighbouring line: two
-    # rows of one aligned display print barely two points apart.
+    # Three points of breathing room, but never into a neighbouring line.
     top = lines[start]["top"]
     bottom = max(line["bottom"] for line in covered)
     above = (lines[start - 1]["bottom"] + top) / 2 if start else 0
@@ -443,8 +629,46 @@ def anchor_extent(model, index, kind, blockers, rows, closing, following):
     cut = (terminator == "page-end" and end == len(lines) - 1
            and continues_overleaf(following, kind, margin + 17))
     extent = {"lines": len(covered), "terminator": terminator, "sourceEndMatched": matched,
-              "truncatedAtPageEnd": cut}
+              "truncatedAtPageEnd": cut, "method": "printed-lines"}
     return rectangle, lines[index]["text"], extent
+
+### Geometry gates ############################################################
+# Two closed checks on the boxes the rules produced, measured against the
+# printed ink itself rather than against the rules that drew them. Both fail
+# the run: a wrong highlight is a wrong claim about the paper.
+STRADDLE = 0.15  # of a printed row's height, the most an edge may cut off
+
+def check_geometry(geometries, anchors):
+    """No two display boxes may overlap, and no box edge may cut a printed row.
+
+    Statement boxes legitimately contain display boxes, so only displays are
+    checked against each other; every box, statement or display, is checked
+    against the printed rows, because an edge through the middle of a row
+    shows half a line of mathematics.
+    """
+    overlapping, straddling = [], []
+    displays = collections.defaultdict(list)
+    for anchor in anchors:
+        if anchor["kind"] in DISPLAY_KINDS:
+            displays[(anchor["paperId"], anchor["page"])].append(anchor)
+    for boxes in displays.values():
+        boxes.sort(key=lambda anchor: anchor["rectangles"][0]["y0"])
+        for first, second in zip(boxes, boxes[1:]):
+            a, b = first["rectangles"][0], second["rectangles"][0]
+            if b["y0"] < a["y1"] and b["x0"] < a["x1"] and a["x0"] < b["x1"]:
+                overlapping.append(first["id"] + " / " + second["id"])
+    for anchor in anchors:
+        model = geometries[anchor["paperId"]][anchor["page"]]
+        rectangle = anchor["rectangles"][0]
+        edges = (rectangle["y0"] * model["height"], rectangle["y1"] * model["height"])
+        printed = [(band["top"], band["bottom"]) for band in model["bands"]] + model["blocks"]
+        for top, bottom in printed:
+            inset = STRADDLE * (bottom - top)
+            if any(top + inset < edge < bottom - inset for edge in edges):
+                straddling.append(f"{anchor['id']} at {top:.1f}-{bottom:.1f}")
+    require(not overlapping, "Display highlights overlap: " + "; ".join(overlapping))
+    require(not straddling, "Highlight edges cut printed rows: " + "; ".join(straddling))
+    print(f"geometry gates: {len(displays)} pages of displays, 0 overlaps, 0 straddled rows")
 
 def verified_statement_location(pdf, record, page_number, top):
     """Verify numbered statement headers, including anchors before a page break.
@@ -515,8 +739,8 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
     inputs = ROOT / "inputs"
     inputs.mkdir(exist_ok=True)
     trace = {"schemaVersion": 1, "papers": [], "anchors": [], "geometryMeaning":
-             "Highlights box the printed extent of a labelled statement or display, from its header to its last line on that page (a statement continuing onto the next page is cut at the page end). They do not delimit or certify proofs. Correspondence to Lean is curated, not compiler-derived."}
-    diagnostics = []
+             "Highlights box the printed extent of a labelled statement or display. A statement is boxed from its printed header line to its last line on that page (one continuing onto the next page is cut at the page end). A display is boxed from the connected block of printed ink its own number claims, so a fraction, a large operator's limit line, a case brace or a row set \\nonumber is inside the box whatever its height; rows sharing one block are divided between the numbers printed beside them. They do not delimit or certify proofs. Correspondence to Lean is curated, not compiler-derived."}
+    diagnostics, geometries = [], {}
     for paper in data["papers"]:
         paper_id = paper["id"]
         pdf_path = repo / paper["path"]
@@ -541,6 +765,13 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
             subprocess.run(["pdftoppm", "-r", "125", "-png", str(pdf_path), prefix], check=True, capture_output=True)
             rendered = sorted(Path(temporary).glob("page-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
             require(len(rendered) == len(reader.pages), "Rendered PDF page count differs")
+            # A second, finer greyscale rendering is the ink a display box is
+            # measured from. It is local evidence only: the published page
+            # images stay the 125 dpi colour ones written just below.
+            subprocess.run(["pdftoppm", "-r", str(INK_DPI), "-gray", "-png", str(pdf_path),
+                            str(Path(temporary) / "ink")], check=True, capture_output=True)
+            inked = sorted(Path(temporary).glob("ink-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
+            require(len(inked) == len(reader.pages), "Ink rendering page count differs")
             for i, path in enumerate(rendered, 1):
                 with Image.open(path) as image:
                     dest = paper_dir / f"page-{i:03d}.webp"
@@ -549,10 +780,10 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
                                          "file": f"papers/{paper_id}/{dest.name}", "sha256": digest(dest)})
             with pdfplumber.open(pdf_path) as pdf:
                 # Locate every anchor first: a statement box stops at the next
-                # statement's printed header, and a display box stops at the
-                # next labelled display, so each page's other anchors are part
-                # of the geometry and must be known before any box is grown.
+                # statement's printed header, so each page's other anchors are
+                # part of the geometry and must be known before any box is grown.
                 located, geometry = [], {}
+                measure = lambda number: page_model(pdf.pages[number - 1], inked[number - 1])
                 for record in labels(aux_text):
                     label = record["label"]
                     if label not in src_labels or record["destination"] not in destinations:
@@ -566,7 +797,7 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
                     if header == "Unnumbered equation":
                         kind = "unnumbered-equation"
                     if page_number not in geometry:
-                        geometry[page_number] = page_model(pdf.pages[page_number - 1])
+                        geometry[page_number] = measure(page_number)
                     index = anchor_line(geometry[page_number], kind, top)
                     located.append((record, destination_page, page_number, top, header, kind, index))
                 starts = collections.defaultdict(set)
@@ -575,13 +806,13 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
                 for record, destination_page, page_number, top, header, kind, index in located:
                     label = record["label"]
                     blockers = starts[(page_number, False)] - {index}
-                    rows = starts[(page_number, True)] - {index}
                     closing = closing_words(src_texts[src_labels[label]["file"]], src_offsets[label]) \
                         if kind not in DISPLAY_KINDS | HEADING_KINDS else []
                     if page_number < len(pdf.pages) and page_number + 1 not in geometry:
-                        geometry[page_number + 1] = page_model(pdf.pages[page_number])
-                    rect, excerpt, extent = anchor_extent(geometry[page_number], index, kind, blockers,
-                                                          rows, closing, geometry.get(page_number + 1))
+                        geometry[page_number + 1] = measure(page_number + 1)
+                    rect, excerpt, extent = anchor_extent(geometry[page_number], index, kind,
+                                                          record["number"], blockers, closing,
+                                                          geometry.get(page_number + 1))
                     mapping = by_anchor.get((paper_id, label))
                     title = plain_tex(record["titleTex"])
                     display_kind = header or {"equation": "Equation", "section": "Section", "subsection": "Section"}.get(kind, kind.capitalize())
@@ -600,6 +831,7 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
                     diagnostics.append({"id": record["id"], "kind": kind, "page": page_number,
                                         "file": f"papers/{paper_id}/page-{page_number:03d}.webp",
                                         "rect": rect, "extent": extent, "mapped": bool(mapping)})
+                geometries[paper_id] = geometry
         trace["papers"].append({"id": paper_id, "title": paper["title"], "pdf": f"papers/{paper_id}/paper.pdf",
                                 "pdfSha256": digest(pdf_path), "auxSha256": digest(aux_path), "pages": page_records})
         # Hosted files replace the data URLs and machine-local paths.
@@ -612,6 +844,7 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
             paper["paperRevision"] = revision["edition"]
     found = {(a["paperId"], a["label"]) for a in trace["anchors"]}
     require(set(by_anchor) <= found, "Mapped labels have no compiled PDF destinations: " + repr(set(by_anchor) - found))
+    check_geometry(geometries, trace["anchors"])
     trace["anchors"].sort(key=lambda a: (a["paperId"], a["page"], a["rectangles"][0]["y0"], a["label"]))
     for item in trace["anchors"]:
         for name in item["lean"]:
@@ -626,7 +859,7 @@ def prepare(repo, snapshot, mapping_files, paper_receipt=None):
         step.pop("command", None)
     data["meta"]["publicEdition"] = {"originalOfflineArtifactSha256": PROOF_SHA,
         "evidenceNotice": "The original full report hash is retained. The displayed report is a public extract; machine-local command lines and non-axiom operational log bodies are omitted. No Lean source or mathematical statement was changed.",
-        "paperTrace": "Compiled PDF destinations locate labels; printed numbered statement headers verify and correct page-break locations. Each highlight then boxes the printed extent of that statement or display, from its header to its last line on that page, from the PDF's own text geometry and the manuscript's closing words; a statement continuing onto the next page is cut at the page end. Highlights do not delimit or certify proofs. Human-reviewed label/declaration mappings determine mathematical correspondence, which is not itself kernel-checked."}
+        "paperTrace": "Compiled PDF destinations locate labels; printed numbered statement headers verify and correct page-break locations. Each highlight then boxes the printed extent of that statement or display. A statement is measured in printed lines, from its header to its last line on that page, against the PDF's own text geometry and the manuscript's closing words, and is cut at the page end if it continues overleaf. A display is measured as printed ink: the connected block of ink its own printed number claims, so a fraction, a limit line under a large operator, a case brace or an aligned row set \\nonumber lies inside the box regardless of height, and rows sharing a block are divided between the numbers printed beside them. Two checks fail the build: display highlights may not overlap, and no highlight edge may cut through a printed row. Highlights do not delimit or certify proofs. Human-reviewed label/declaration mappings determine mathematical correspondence, which is not itself kernel-checked."}
     if revision:
         data["meta"]["paperRevision"] = {"receiptSha256": digest(paper_receipt), "receipt": revision,
             "notice": "The papers were editorially revised after the unchanged Lean proof snapshot. This separate source/PDF receipt covers the revised papers; the older proof verification report covers the earlier paper bytes, not these PDFs."}
@@ -693,10 +926,13 @@ def review_sheets(inputs, diagnostics):
             region.thumbnail(CELL)
             x = PAD + (slot % COLUMNS) * (CELL[0] + PAD)
             y = PAD + (slot // COLUMNS) * (CELL[1] + LABEL + PAD)
-            caption = "{id} · {kind} · {terminator}{source} · {lines} line(s){cut}{map}".format(
-                id=item["id"], kind=item["kind"], terminator=item["extent"]["terminator"],
+            rows = "row(s)" if item["extent"]["method"].startswith("ink") else "line(s)"
+            caption = "{id} · {kind} · {method} · {terminator}{source} · {lines} {rows}{cut}{map}".format(
+                id=item["id"], kind=item["kind"], method=item["extent"]["method"],
+                terminator=item["extent"]["terminator"],
                 source="+src" if item["extent"]["sourceEndMatched"] else "",
-                lines=item["extent"]["lines"], cut=" · CUT AT PAGE END" if item["extent"]["truncatedAtPageEnd"] else "",
+                lines=item["extent"]["lines"], rows=rows,
+                cut=" · CUT AT PAGE END" if item["extent"]["truncatedAtPageEnd"] else "",
                 map=" · MAPPED" if item["mapped"] else "")
             draw.text((x, y + 3), caption, fill="#101418", font=font)
             sheet.paste(region, (x, y + LABEL))

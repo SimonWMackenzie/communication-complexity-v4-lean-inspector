@@ -97,11 +97,14 @@
   --hl-assembled:#2f8f57;
   --hl-external:#e0a458;
   /* "No correspondence" and "context" were two greys a shade apart and read as
-     one category. Unmapped stays grey (and dotted); context takes a
-     desaturated violet lifted out of --accent-dim, which reads clearly both
-     on the white page and in the dark key. */
+     one category. Unmapped stays grey (and dotted); context takes a muted
+     rose, which reads clearly both on the white page and in the dark key. It
+     was a desaturated violet, but that is the selection accent's own hue, so
+     the single context anchor looked permanently selected; the rose is the
+     fifth distinct hue after green, deeper green, amber and grey. The key
+     swatch is generated from this token, so both move together. */
   --hl-unmapped:#6f7d8d;
-  --hl-context:#8a7cc8;
+  --hl-context:#c98bb3;
 
   /* -- Code surface --------------------------------------------------------- */
   --code-bg:#0b0f15;
@@ -1703,6 +1706,11 @@ body:not(.mode-graph) .topbar .routes{display:none}
   background:color-mix(in srgb,var(--hl-unmapped) 8%,transparent);
   opacity:.6;
 }
+/* trace.js stacks boxes by area, so the largest box on a page is painted
+   lowest; when that box has no correspondence it can still sit over a mapped
+   container that holds it. A curated highlight always stacks above an
+   uncurated one. Selection still wins over both. */
+.paper-highlight.unmapped:not(.selected){z-index:1}
 .paper-highlight.context{--hl:var(--hl-context);opacity:.75}
 .paper-highlight.unmapped:hover,
 .paper-highlight.context:hover,

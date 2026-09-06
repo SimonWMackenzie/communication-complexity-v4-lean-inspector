@@ -37,17 +37,32 @@ reviewed update, not silently reading a different proof.
   one further curated entry identifies contextual evidence rather than a theorem.
 - The complete compiled PDF anchor index also exposes locations without
   curated counterparts, clearly labelled as such rather than hidden.
-- Highlights box the printed extent of a labelled statement or display, from
-  its header to its last line on that page; a statement continuing onto the
-  next page is cut at the page end. They do not delimit or certify a proof.
-  Physical pages and coordinates come from PDF named destinations corresponding
-  to compiled AUX labels. Numbered statement headers are verified in the PDF
-  text, correcting destinations that LaTeX placed before a page break; the
-  original destination page is retained. The extent itself is measured from the
-  PDF's own printed lines, and, where a statement environment ends in prose,
-  confirmed against that environment's closing words in the manuscript source.
-  Each anchor records which rule ended it (`extent.terminator`), whether the
-  source words matched, and whether the box was cut at the page end.
+- Highlights box the printed extent of a labelled statement or display. They
+  do not delimit or certify a proof. Physical pages and coordinates come from
+  PDF named destinations corresponding to compiled AUX labels. Numbered
+  statement headers are verified in the PDF text, correcting destinations that
+  LaTeX placed before a page break; the original destination page is retained.
+  A **statement** is then measured in printed lines, from its header to its
+  last line on that page, and, where the environment ends in prose, confirmed
+  against that environment's closing words in the manuscript source; one
+  continuing onto the next page is cut at the page end.
+  A **display** is not measured in lines at all — a row holding a fraction, a
+  large operator with its limits, or a case brace is taller than a line of
+  text, and counting lines under-measures it. It is measured as ink: the two
+  papers are re-rendered in greyscale at 300 dpi, running text is masked out
+  over its own columns, and what remains is banded into connected blocks of
+  display ink. A display's box is the block claimed by its own printed number,
+  where every number owns the row it is printed beside and a row printed
+  without one — a row of an aligned display set `\nonumber`, a limit line, a
+  brace — belongs to the nearest number. Masking running text first is what
+  keeps the last words of an introducing sentence out of the box even when the
+  two print less than a point apart.
+  Two gates fail the run: no two display boxes on a page may overlap, and no
+  box edge, statement or display, may cut through a printed row.
+  Each anchor records how it was measured (`extent.method`, `ink-cluster` or
+  `printed-lines`), which rule ended it (`extent.terminator`), how many
+  printed rows or lines it covers, whether the source words matched, and
+  whether the box was cut at the page end.
 - Every mapping is mathematical interpretation, not a Lean certificate.
   Definitions, statement correspondences, assembled proofs, external inputs,
   and unmapped context are separately labelled.
@@ -358,3 +373,50 @@ of the hex it replaced and between 9.5:1 and 11.5:1 on its own fill; the graph
 search's empty state is the muted `.nav-empty` row the other two searches use,
 and says what to try; and `colourable`/`colouring` in the curated map's prose
 are US-spelled like the rest of the site.
+
+## Equation-box revision
+
+**Line counts cannot measure a display.** The statement boxes were right, but
+31 of the 298 equation boxes were not, and all of them failed the same way: the
+extent walker advanced by a text line height, so every row taller than one line
+was under-measured and the error accumulated down a stack of such rows. A box
+meant for equation *n* covered the lower half of *n−1* and stopped inside *n*,
+leaving the number itself outside; a `\min` over three fractions kept its
+opening brace and lost its denominators; a `\sum` or `\bigsqcup` lost the limit
+line printed beneath it; a `cases` brace lost its last row; and an aligned
+display whose earlier rows are set `\nonumber` was boxed at its numbered row
+alone, although the same pipeline covered all four rows of another such display
+two pages later. A second fault let a box open on the last words of the
+sentence introducing the display, so its left edge sat at the body margin
+instead of the display's own.
+
+**Displays are now taken from the ink.** Both papers are re-rendered in
+greyscale at 300 dpi purely to be measured — the published page images are the
+same 125 dpi colour renders as before. Running text is masked out of that
+rendering first, over its own columns only: a row is running text when it
+starts at the margin, or one indent in from it and opening with a word rather
+than with mathematics, and never when it carries a display's number. What is
+left is banded into connected blocks of display ink, and a display's box is the
+block its own printed number claims. Every printed number owns the row it is
+printed beside; a row printed without one — an aligned row set `\nonumber`, a
+large operator's limit line, a case brace — belongs to the number nearest it.
+Nothing is counted in lines, so a row's height is whatever it prints as.
+Masking the text first is what fixes the second fault: on reader page 13 the
+word "which" and the display below it print 0.7pt apart and would otherwise be
+one block of ink.
+
+Two gates now fail the run rather than being checked by eye: no two display
+boxes on a page may overlap, and no box edge may cut through a printed row by
+more than 15% of its height. Statement boxes are unchanged and pass the second
+gate as they stood. The convention where an `align` numbers several rows is
+that each number boxes its own row: `eq:reference-arithmetic-defs` is equation
+(174), and (173) above it — a numbered row of the same `align`, unlabelled and
+so not an anchor — keeps its own row rather than being drawn into (174)'s box.
+
+**Two colours.** The context class was a desaturated violet one step from
+`--accent`, so the single context anchor read as permanently selected; it is a
+muted rose now, the fifth distinct hue after green, deeper green, amber and
+grey, and the key swatch follows the token. And a box with no curated
+correspondence no longer stacks over a mapped one that contains it: boxes are
+ordered by area, which put the largest unmapped box at the bottom of the pile
+and therefore over nothing, so `.unmapped` is given a lower layer of its own.
