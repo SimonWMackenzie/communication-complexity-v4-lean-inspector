@@ -126,7 +126,8 @@
 /* min-height:0 and padding:0 defend the recorded border box against the shared
  * control height and padding that design.css gives every other button.
  * --depth is written per box by trace.js so that a smaller box always paints
- * above a larger one; the selected box stays above all of them. */
+ * above a larger one. Selection must not elevate a containing theorem over
+ * its inner equations: its stronger border and fill indicate selection. */
 .paper-highlight{
   position:absolute;
   padding:0;
@@ -135,7 +136,6 @@
   cursor:pointer;
   z-index:var(--depth,2);
 }
-.paper-highlight.selected{z-index:200}
 
 /* --- Detail panel (right column) ----------------------------------------- */
 

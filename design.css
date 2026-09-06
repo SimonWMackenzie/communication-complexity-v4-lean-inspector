@@ -1706,11 +1706,9 @@ body:not(.mode-graph) .topbar .routes{display:none}
   background:color-mix(in srgb,var(--hl-unmapped) 8%,transparent);
   opacity:.6;
 }
-/* trace.js stacks boxes by area, so the largest box on a page is painted
-   lowest; when that box has no correspondence it can still sit over a mapped
-   container that holds it. A curated highlight always stacks above an
-   uncurated one. Selection still wins over both. */
-.paper-highlight.unmapped:not(.selected){z-index:1}
+/* Geometry, not correspondence status or selection, controls stacking.
+   When unmapped locations are shown, an inner equation must stay clickable
+   even inside a mapped theorem; its dotted styling still marks its status. */
 .paper-highlight.context{--hl:var(--hl-context);opacity:.75}
 .paper-highlight.unmapped:hover,
 .paper-highlight.context:hover,

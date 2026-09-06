@@ -20,6 +20,22 @@ async function checkPaperGeometry(page,label){
  check(label+' highlights follow exact PDF coordinates',result.aligned);
  check(label+' selected theorem stays inside reading area',result.visible);
 }
+async function checkNestedEquations(page,label,paper='reader'){
+ const anchor=paper==='reader'?'reader:thm:reader-main':'formal:thm:finite-main';
+ const theorem=page.locator('.paper-highlight[data-anchor="'+anchor+'"]');
+ for(const n of [3,4,5,6,7]){
+  // Click the theorem heading itself, then an inner row using real pointer
+  // hit-testing. Programmatic DOM clicks would miss an overlay interception.
+  await theorem.click({position:{x:12,y:12},timeout:5000});
+  const row=page.getByRole('button',{name:new RegExp('^Equation '+n+'—')});
+  await row.click({timeout:5000});
+  check(label+' equation '+n+' is clickable inside the selected theorem',
+   await row.evaluate(e=>e.classList.contains('selected'))&&
+   (await page.locator('#paper-detail h2').innerText()).includes('Equation '+n));
+ }
+ await theorem.click({position:{x:12,y:12},timeout:5000});
+ check(label+' theorem remains selectable after its inner equations',await theorem.evaluate(e=>e.classList.contains('selected')));
+}
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
  const browser=await chromium.launch({headless:true,channel:'msedge'});
@@ -35,6 +51,7 @@ async function checkPaperGeometry(page,label){
   await checkPaperGeometry(page,'Desktop');
   check('selected paper highlight is in the reading viewport',await page.evaluate(()=>{const h=document.querySelector('.paper-highlight.selected').getBoundingClientRect(),f=document.getElementById('paper-scroll').getBoundingClientRect();return h.top>=f.top&&h.bottom<=f.bottom;}));
   await page.screenshot({path:path.join(out,'01-reader-desktop.jpg'),type:'jpeg',quality:88});
+  await checkNestedEquations(page,'Desktop');
   await page.locator('#open-proof-map').click();
   check('dependency graph is prominent and opens',await page.locator('#graph-workspace').isVisible());
   check('all mathematical nodes rendered',await page.locator('.proof-node').count()===14);
@@ -107,6 +124,7 @@ async function checkPaperGeometry(page,label){
   check('mobile selected theorem stays in view after resizing',true);
   await page.locator('#paper-page-2 img').evaluate(img=>img.decode());
   await checkPaperGeometry(page,'Mobile');
+  await checkNestedEquations(page,'Mobile');
   check('mobile paper has no page-level overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(out,'06-reader-mobile.jpg'),type:'jpeg',quality:88});
@@ -117,17 +135,21 @@ async function checkPaperGeometry(page,label){
   check('200 percent text has no page-level overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
   await checkPaperGeometry(page,'200 percent text');
+  await checkNestedEquations(page,'200 percent text');
   await page.screenshot({path:path.join(out,'07-reader-200-percent.jpg'),type:'jpeg',quality:88});
   await showControl(page,'#scale-reset');await page.locator('#scale-reset').click();
   await page.locator('#trace-paper').selectOption('formal');
   check('formal paper opens its main theorem on page 4',(await page.locator('#trace-page').inputValue())==='4');
   await checkPaperGeometry(page,'Formal paper');
+  await page.locator('#trace-unmapped').check();
+  await checkNestedEquations(page,'Formal paper with unmapped equations shown','formal');
+  await page.locator('#trace-unmapped').uncheck();
   await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(out,'08-formal-desktop.jpg'),type:'jpeg',quality:88});
   await page.goto(baseURL+'#view=graph&graph=source',{waitUntil:'load',timeout:120000});
   await page.waitForFunction(()=>window.V4Graph,null,{timeout:120000});
   check('shared graph URL restores graph view',await page.locator('#graph-workspace').isVisible());
-  for(const file of ['snapshot.json','graph.js','graph-core.js','trace.js','proof-data.json.gz','papers/reader/paper.pdf','papers/formal/paper.pdf']){
+  for(const file of ['snapshot.json','graph.js','graph-core.js','trace.js','trace.css','design.css','proof-data.json.gz','papers/reader/paper.pdf','papers/formal/paper.pdf']){
    const response=await page.request.get(baseURL+file,{timeout:120000});
    const digest=b=>createHash('sha256').update(b).digest('hex');
    check('served asset matches reviewed build: '+file,response.ok()&&digest(await response.body())===digest(fs.readFileSync(path.join('dist',file))));
