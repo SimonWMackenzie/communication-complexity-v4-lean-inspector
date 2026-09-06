@@ -206,7 +206,7 @@
     const main=el('section');main.id='paper-workspace';main.hidden=true;
     const toolbar=el('div','trace-toolbar'),paper=el('select');paper.id='trace-paper';paper.setAttribute('aria-label','Choose manuscript');paper.title='Which of the two manuscripts is shown in the reading area';for(const p of trace.papers){const o=el('option',null,paperOptionLabel(p));o.value=p.id;paper.append(o);}paper.addEventListener('change',()=>showPaper(paper.value));
     const pageLabel=el('label',null,'Page '),page=el('input');page.id='trace-page';page.type='number';page.min='1';page.value='1';page.setAttribute('aria-label','PDF page');pageLabel.append(page);const total=el('span');total.id='trace-page-total';pageLabel.append(total);
-    const go=()=>{const n=Math.max(1,Math.min(activePaper.pages.length,Number(page.value)||1));page.value=n;const target=$('paper-page-'+n),frame=$('paper-scroll');frame.scrollTo({top:frame.scrollTop+target.getBoundingClientRect().top-frame.getBoundingClientRect().top,behavior:'instant'});};page.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    const go=()=>{const n=Math.max(1,Math.min(activePaper.pages.length,Math.trunc(Number(page.value))||1));page.value=n;const target=$('paper-page-'+n),frame=$('paper-scroll');if(target)frame.scrollTo({top:frame.scrollTop+target.getBoundingClientRect().top-frame.getBoundingClientRect().top,behavior:'instant'});};page.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
     const zoomValue=el('output');zoomValue.id='trace-zoom-value';
     const zoomGroup=el('div','control-group zb');zoomGroup.setAttribute('role','group');zoomGroup.setAttribute('aria-label','Page zoom');
     /* "Fit width" is the zoom's reset, so it sits inside the pill as a fourth

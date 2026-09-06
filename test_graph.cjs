@@ -11,6 +11,12 @@ check('every reverse edge is exact',()=>{for(const [id,deps]of g.out)for(const t
 check('limit is reported, not a false terminal',()=>{const v=G.view(g,root,{depth:Infinity,limit:20,libraries:true});assert.equal(v.nodes.length,20);assert.equal(v.hiddenGroups,reachable.size-20);assert.ok(v.hiddenEdges>0);});
 check('filtered cards remain in reachability count',()=>{const v=G.view(g,root,{depth:Infinity,limit:20,libraries:false});assert.equal(v.reached,reachable.size);assert.ok(v.filteredCards>0);});
 check('group counts preserve eligible declarations',()=>{const v=G.view(g,root,{depth:Infinity,limit:Infinity,grouped:true,libraries:true});assert.equal(v.nodes.reduce((n,x)=>n+x.members.length,0),reachable.size);});
+check('origin filtering removes hidden members of the focused module',()=>{const v=G.view(g,root,{depth:2,grouped:true,include:()=>false});assert.deepEqual(v.eligible,[root]);assert.deepEqual(v.nodes[0].members,[root]);assert.equal(v.edgePairs.length,0);assert.equal(v.allEdges.length,0);assert.equal(v.filteredCards,v.reached-1);});
+check('grouped arrows contain only eligible reference pairs',()=>{
+ const x=G.index({root:'a',declarations:[{id:'a',module:'A',source:'a',dependencies:['hidden','b']},{id:'hidden',module:'A',source:'h',dependencies:['b']},{id:'b',module:'B',source:'b',dependencies:[]}]});
+ const v=G.view(x,'a',{grouped:true,include:d=>d.id!=='hidden'});
+ assert.deepEqual(v.nodes.find(n=>n.id==='A').members,['a']);assert.deepEqual(v.edgePairs,[['a','b']]);assert.deepEqual(v.allEdges[0].pairs,[['a','b']]);assert.equal(v.reached,3);assert.equal(v.eligibleCount,2);
+});
 check('shortest path consists only of recorded edges',()=>{const target=[...reachable.keys()].at(-1),p=G.path(g,root,target);assert.ok(p);for(let i=1;i<p.length;i++)assert.ok(g.out.get(p[i-1]).includes(p[i]));});
 check('unreachable is distinct from omitted',()=>{const target=[...g.cards.keys()].find(x=>!reachable.has(x));assert.equal(G.path(g,root,target),null);});
 check('layered layout never overlaps nodes',()=>{const v=G.view(g,root,{depth:3,limit:100,libraries:true}),l=G.layout(v.nodes);for(let i=0;i<v.nodes.length;i++)for(let j=i+1;j<v.nodes.length;j++){const a=l.positions.get(v.nodes[i].id),b=l.positions.get(v.nodes[j].id);assert.ok(a.x+a.width<=b.x||b.x+b.width<=a.x||a.y+a.height<=b.y||b.y+b.height<=a.y);}});

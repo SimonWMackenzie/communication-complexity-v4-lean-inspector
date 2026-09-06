@@ -58,9 +58,9 @@ reviewed update, not silently reading a different proof.
   keeps the last words of an introducing sentence out of the box even when the
   two print less than a point apart.
   Two gates fail the run: no two display boxes on a page may overlap, and no
-  box edge, statement or display, may cut through a printed row.
-  Each anchor records how it was measured (`extent.method`, `ink-cluster` or
-  `printed-lines`), which rule ended it (`extent.terminator`), how many
+  box's top or bottom edge may cut more than 15% into a printed row.
+  Each anchor records how it was measured (`extent.method`: `ink-cluster`,
+  `ink-cluster-located` or `printed-lines`), which rule ended it (`extent.terminator`), how many
   printed rows or lines it covers, whether the source words matched, and
   whether the box was cut at the page end.
 - Every mapping is mathematical interpretation, not a Lean certificate.
@@ -199,17 +199,16 @@ In the Lean source graph, declaration names break where the name itself breaks
 does not fit is middle-ellipsized rather than cut mid-token; the complete name
 stays in the node's tooltip and in the aside.
 
-One pre-existing nit is recorded but not fixed, because it is in the read-only
-template: its document-level `keydown` handler calls `e.target.matches(...)`
-without checking that the target is an `Element`, so a keyboard event
-dispatched directly on `document` or `window` throws. Real keystrokes always
-target an element, so this never fires in use. The handlers this repository
-owns (`trace.js`, `graph.js`) guard it.
+The build adds an `Element` guard to the preserved template's document-level
+keyboard handler, matching the guards in `trace.js` and `graph.js`. Keyboard
+events dispatched directly on `document` or `window` therefore do not throw.
 
 The user approved browser testing. test_browser.cjs runs an isolated headless
 browser against the local preview and covers paper tracing, definition cards,
 graph search/paths/arrows, mobile layout, 200-percent text and page errors.
 Pass the installed Playwright module path as its first argument when needed.
+An optional second argument selects the site URL, including the trailing slash,
+so the same checks can run against GitHub Pages after deployment.
 Run node test_graph.cjs for the pure graph-data tests as well.
 
 ## Density revision

@@ -1,8 +1,16 @@
 // User-authorized browser QA against our loopback preview; no authenticated session.
 const {chromium}=require(process.argv[2]||'playwright');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {createHash}=require('node:crypto');
 const out=path.resolve('qa/browser'),checks=[];
+const baseURL=process.argv[3]||'http://127.0.0.1:8764/';
 function check(name,condition){assert.ok(condition,name);checks.push(name);console.log('PASS '+name);}
+async function waitReady(page){await page.waitForFunction(()=>window.V4Graph&&window.V4Trace,null,{timeout:120000});}
+async function showControl(page,id){
+ // Resizing or changing text size moves controls on the next layout frame.
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ if(!await page.locator(id).isVisible())await page.locator('.more > summary').click();
+}
 async function checkPaperGeometry(page,label){
  await page.locator('.paper-highlight.selected').first().evaluate(async h=>{await h.parentElement.querySelector('img').decode();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
  const result=await page.evaluate(()=>{
@@ -18,12 +26,13 @@ async function checkPaperGeometry(page,label){
  try{
   const context=await browser.newContext({viewport:{width:1600,height:1100},acceptDownloads:true});
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:8764/',{waitUntil:'load',timeout:120000});
-  await page.waitForFunction(()=>window.V4Graph&&window.V4Trace,null,{timeout:120000});
+  await page.goto(baseURL,{waitUntil:'load',timeout:120000});
+  await waitReady(page);
   await page.waitForFunction(()=>document.querySelector('.paper-highlight.selected'));
   check('landing is the reader paper at its main theorem',await page.locator('#paper-workspace').isVisible()&&/paper=reader&anchor=thm%3Areader-main/.test(page.url()));
   check('paper opens without fatal errors',!(await page.locator('#fatal').isVisible()));
   check('reader main theorem is on its actual PDF page',(await page.locator('#trace-page').inputValue())==='2');
+  await checkPaperGeometry(page,'Desktop');
   check('selected paper highlight is in the reading viewport',await page.evaluate(()=>{const h=document.querySelector('.paper-highlight.selected').getBoundingClientRect(),f=document.getElementById('paper-scroll').getBoundingClientRect();return h.top>=f.top&&h.bottom<=f.bottom;}));
   await page.screenshot({path:path.join(out,'01-reader-desktop.jpg'),type:'jpeg',quality:88});
   await page.locator('#open-proof-map').click();
@@ -32,10 +41,17 @@ async function checkPaperGeometry(page,label){
   await page.screenshot({path:path.join(out,'02-map-desktop.jpg'),type:'jpeg',quality:88});
   await page.locator('[data-graph-node=source]').click();
   check('external input is labelled honestly',(await page.locator('#graph-detail').innerText()).includes('do not prove its existence'));
+  await page.reload({waitUntil:'load'});await waitReady(page);
+  check('shared curated selection survives reload',(await page.locator('#graph-detail h2').innerText())==='Source graphs');
   await page.locator('#graph-mode').selectOption('source');
+  await page.reload({waitUntil:'load'});await waitReady(page);
+  check('view dropdown is preserved in the URL',(await page.locator('#graph-mode').inputValue())==='source');
   check('source relation distinguished',(await page.locator('#graph-subtitle').innerText()).includes('not dependencies extracted from kernel proof terms'));
   // The source-mode controls live in a <details> that starts closed; open it before driving them.
-  await page.locator('#graph-workspace details').first().evaluate(d=>{d.open=true;});
+  if(!await page.locator('#graph-grouped').isVisible())await page.locator('#source-controls-box > summary').click();
+  await page.locator('#graph-origin-this-paper').uncheck();
+  check('filtered module does not retain hidden declarations',await page.evaluate(()=>{const v=V4Graph.getView();return v.eligible.length===1&&v.nodes.length===1&&v.nodes[0].members.length===1&&v.edgePairs.length===0;}));
+  await page.locator('#graph-origin-this-paper').check();
   await page.locator('#graph-grouped').uncheck();
   await page.locator('#graph-depth').selectOption('3');
   await page.locator('#graph-limit').selectOption('40');
@@ -50,6 +66,8 @@ async function checkPaperGeometry(page,label){
   await page.locator('#graph-search').fill('rationalCommonBridge');
   await page.locator('#graph-search-results button').first().click();
   check('graph search changes focus',(await page.locator('#graph-focus').innerText()).includes('rationalCommonBridge'));
+  await page.reload({waitUntil:'load'});await waitReady(page);
+  check('shared source focus survives reload',(await page.locator('#graph-focus').innerText()).includes('rationalCommonBridge'));
   await page.locator('#graph-detail').getByRole('button',{name:'Path from main theorem',exact:true}).click();
   check('root path is explained',(await page.locator('#graph-message').innerText()).includes('shortest recorded-reference path'));
   const old=await page.locator('#graph-zoom').innerText();
@@ -64,6 +82,8 @@ async function checkPaperGeometry(page,label){
   check('deeper explorer opens from Lean',await page.locator('#graph-workspace').isVisible());
   await page.locator('#open-paper-trace').click();
   check('paper remains reachable from graph',await page.locator('#paper-workspace').isVisible());
+  await page.locator('#trace-page').fill('2.5');await page.locator('.trace-pagebox').getByRole('button',{name:'Go',exact:true}).click();
+  check('fractional PDF page input is normalized',(await page.locator('#trace-page').inputValue())==='2');
   await page.locator('#paper-detail').getByRole('button',{name:'Definition card',exact:true}).first().click();
   check('paper-linked definition card opens',await page.locator('.definition-card').isVisible());
   await page.keyboard.press('Escape');
@@ -75,6 +95,10 @@ async function checkPaperGeometry(page,label){
   check('Lean reverse link returns to paper',await page.locator('#paper-workspace').isVisible());
   await page.setViewportSize({width:390,height:844});
   await page.locator('#open-proof-map').click();
+  await page.keyboard.press('/');
+  check('mobile search shortcut reveals folded controls',await page.locator('#top-search').isVisible()&&await page.locator('#top-search').evaluate(e=>document.activeElement===e));
+  await page.keyboard.press('Escape');
+  await page.locator('.more > summary').click();
   check('mobile has no page-level horizontal overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.screenshot({path:path.join(out,'05-map-mobile.jpg'),type:'jpeg',quality:88,fullPage:true});
   await page.locator('#open-paper-trace').click();
@@ -87,19 +111,30 @@ async function checkPaperGeometry(page,label){
   await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(out,'06-reader-mobile.jpg'),type:'jpeg',quality:88});
   await page.setViewportSize({width:1440,height:1000});
-  for(let i=0;i<10;i++)await page.locator('#scale-up').click();
+  for(let i=0;i<10;i++){await showControl(page,'#scale-up');await page.locator('#scale-up').click();}
   check('text enlargement reaches 200 percent',(await page.locator('#scale-value').innerText())==='200%');
   check('text enlargement keeps paper usable',await page.locator('#trace-paper').isVisible());
   check('200 percent text has no page-level overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
   await checkPaperGeometry(page,'200 percent text');
   await page.screenshot({path:path.join(out,'07-reader-200-percent.jpg'),type:'jpeg',quality:88});
-  await page.locator('#scale-reset').click();
-  await page.goto('http://127.0.0.1:8764/#view=graph&graph=source',{waitUntil:'load',timeout:120000});
+  await showControl(page,'#scale-reset');await page.locator('#scale-reset').click();
+  await page.locator('#trace-paper').selectOption('formal');
+  check('formal paper opens its main theorem on page 4',(await page.locator('#trace-page').inputValue())==='4');
+  await checkPaperGeometry(page,'Formal paper');
+  await page.locator('#paper-scroll').scrollIntoViewIfNeeded();
+  await page.screenshot({path:path.join(out,'08-formal-desktop.jpg'),type:'jpeg',quality:88});
+  await page.goto(baseURL+'#view=graph&graph=source',{waitUntil:'load',timeout:120000});
   await page.waitForFunction(()=>window.V4Graph,null,{timeout:120000});
   check('shared graph URL restores graph view',await page.locator('#graph-workspace').isVisible());
+  for(const file of ['snapshot.json','graph.js','graph-core.js','trace.js','proof-data.json.gz','papers/reader/paper.pdf','papers/formal/paper.pdf']){
+   const response=await page.request.get(baseURL+file,{timeout:120000});
+   const digest=b=>createHash('sha256').update(b).digest('hex');
+   check('served asset matches reviewed build: '+file,response.ok()&&digest(await response.body())===digest(fs.readFileSync(path.join('dist',file))));
+   await response.dispose();
+  }
   check('no browser JavaScript errors',errors.length===0);
-  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,checks,errors},null,2));
+  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({success:true,baseURL,checks,errors},null,2));
   console.log(checks.length+' browser checks passed.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

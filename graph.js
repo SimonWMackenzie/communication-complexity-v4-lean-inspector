@@ -158,11 +158,17 @@
       if($(id))$(id).setAttribute('aria-pressed',String(next===mode));
     render();
   }
-  function open(mode='overview',id){
+  function syncHash(){
+    if(!$('graph-workspace')||$('graph-workspace').hidden)return;
+    const params=new URLSearchParams({view:'graph',graph:viewMode,focus});
+    if(selected)params.set('node',selected);
+    try{history.replaceState(null,'','#'+params);}catch(_){}
+  }
+  function open(mode='overview',id,node){
     if(!g)return;
     if(id&&(map.nodes.some(n=>n.id===id)||g.cards.has(id))){focus=g.cards.has(id)?id:focus;selected=id;pathIds=null;}
+    if(node&&(map.nodes.some(n=>n.id===node)||g.cards.has(node)))selected=node;
     window.V4Trace.setMode('graph');switchView(mode);
-    try{history.replaceState(null,'','#'+new URLSearchParams({view:'graph',graph:mode,focus:focus}));}catch(_){}
   }
   function linkPaper(id,host){
     const a=api.DATA.trace.anchors.find(x=>x.id===id);if(!a)return;
@@ -193,6 +199,7 @@
   /* ---- detail: one Lean declaration in the source-reference relation ---- */
   function detailCard(id){
     selected=id;const d=g.cards.get(id),host=$('graph-detail'),origin=originOf(d);host.replaceChildren();
+    syncHash();
     host.append(el('div','eyebrow','Lean source · '+ORIGINS[origin].mark),leanHeading(short(id)));
     const badges=el('div','badges');originBadge(origin,badges);badges.append(el('span','badge',d.kind||'declaration'));host.append(badges);
     host.append(el('p','graph-full-name',id));
@@ -222,6 +229,7 @@
   /* ---- detail: one step of the curated mathematical map ---- */
   function detailOverview(id){
     const n=map.nodes.find(n=>n.id===id);if(!n)return;selected=id;const host=$('graph-detail'),origin=nodeOrigin(n);host.replaceChildren();
+    syncHash();
     host.append(el('div','eyebrow',map.originCaptions[origin]),el('h2',null,n.title));
     const badges=el('div','badges');
     if(n.external){originBadge('external',badges);badges.append(el('span','badge o-'+(origin==='external-companion'?'companion':'this-paper'),origin==='external-companion'?'INTENDED SOURCE · COMPANION PAPER':'PROVED ON PAPER · THIS PAPER'));}
@@ -430,22 +438,15 @@
       detailOverview(map.nodes.some(n=>n.id===selected)?selected:'result');
     }else{
       markShortcut(null);
-      const raw=G.view(g,focus,{...options,pathIds,libraries:!!pathIds||options.libraries,grouped:!pathIds&&options.grouped,limit:Infinity});
-      /* The origin filter runs before the display cap, so "Showing N of M"
-       * keeps meaning "N drawn out of M that passed the filters". */
-      const filtering=!pathIds;
-      const eligible=filtering?raw.eligible.filter(id=>id===focus||originShown[originOf(g.cards.get(id))]):raw.eligible;
-      const kept=new Set(eligible);
-      const groups=filtering?raw.nodes.filter(n=>n.selected||n.members.some(id=>kept.has(id))):raw.nodes;
-      const nodes=pathIds?groups:groups.slice(0,options.limit);
-      const visible=new Set(nodes.map(n=>n.id)),eligibleGroups=new Set(groups.map(n=>n.id));
-      const allEdges=raw.allEdges.filter(e=>(!filtering)||(eligibleGroups.has(e.source)&&eligibleGroups.has(e.target)));
-      const edges=allEdges.filter(e=>visible.has(e.source)&&visible.has(e.target));
-      const edgePairs=filtering?raw.edgePairs.filter(([s,t])=>kept.has(s)&&kept.has(t)):raw.edgePairs;
-      view={nodes,edges,allEdges,eligible,edgePairs,reached:raw.reached,groupCount:groups.length,grouped:raw.grouped,hiddenEdges:allEdges.length-edges.length,filteredCards:raw.reached-eligible.length};
+      /* Origin filtering precedes both module grouping and the display cap. */
+      const raw=G.view(g,focus,{...options,pathIds,libraries:!!pathIds||options.libraries,
+        grouped:!pathIds&&options.grouped,limit:pathIds?Infinity:options.limit,
+        include:d=>!!pathIds||originShown[originOf(d)]});
+      const {nodes,edges,allEdges,eligible,edgePairs}=raw;
+      view=raw;
       drawGraph(nodes,edges,G.layout(nodes,{width:300,height:96}),false);
       $('graph-focus').textContent=focus;
-      counter.append(document.createTextNode('Showing '+count(nodes.length)+' of '+(raw.grouped?plural(groups.length,'module group','module groups'):plural(groups.length,'card','cards'))+' · '+count(edges.length)+' visible / '+(raw.grouped?plural(allEdges.length,'eligible grouped arrow','eligible grouped arrows'):plural(allEdges.length,'eligible edge','eligible edges'))+' · '+plural(edgePairs.length,'declaration-reference pair','declaration-reference pairs')+' (including within groups) · '+plural(raw.reached,'card reached','cards reached')+' · '+plural(raw.reached-eligible.length,'card filtered out','cards filtered out')));
+      counter.append(document.createTextNode('Showing '+count(nodes.length)+' of '+(raw.grouped?plural(raw.groupCount,'module group','module groups'):plural(raw.groupCount,'card','cards'))+' · '+count(edges.length)+' visible / '+(raw.grouped?plural(allEdges.length,'eligible grouped arrow','eligible grouped arrows'):plural(allEdges.length,'eligible edge','eligible edges'))+' · '+plural(edgePairs.length,'declaration-reference pair','declaration-reference pairs')+' (including within groups) · '+plural(raw.reached,'card reached','cards reached')+' · '+plural(raw.reached-eligible.length,'card filtered out','cards filtered out')));
       originSummary(eligible,counter);
       for(const id of eligible){const row=btn(short(id),()=>detailCard(id),'graph-paper-link is-lean'),origin=originOf(g.cards.get(id));row.dataset.origin=origin;row.style.setProperty('--tick',ORIGINS[origin].colour);listing.append(row);}
       const full=g.cards.get(selected)?selected:focus;detailCard(full);
@@ -922,16 +923,18 @@
       const typing=e.target instanceof Element&&e.target.matches('input,textarea,select,[contenteditable=true]');
       if(e.key!=='/'||typing)return;
       if(!$('workspace').hidden)return;
-      e.preventDefault();e.stopPropagation();$('top-search').focus();$('top-search').select();
+      e.preventDefault();e.stopPropagation();
+      const search=$('top-search'),fold=search.closest('details');if(fold)fold.open=true;
+      search.focus();search.select();
     },true);
-    window.addEventListener('hashchange',()=>{const p=new URLSearchParams(location.hash.slice(1));if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'));});
+    window.addEventListener('hashchange',()=>{const p=new URLSearchParams(location.hash.slice(1));if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'),p.get('node'));});
     window.V4Graph={open,graph:g,getView:()=>view,origin:originOf};
     window.V4Trace.refresh();
     // Landing: a hashless visit stays on the paper tracer at the reader's main theorem,
     // which trace.js has already selected (and written as #paper=reader&anchor=thm:reader-main).
     // Only an explicit #view=graph hash opens the dependency explorer on load.
     const p=new URLSearchParams(initialHash.slice(1));
-    if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'));
+    if(p.get('view')==='graph')open(p.get('graph')==='source'?'source':'overview',p.get('focus'),p.get('node'));
   }
   document.addEventListener('v4-inspector-ready',start,{once:true});
 })();

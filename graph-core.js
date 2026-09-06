@@ -23,9 +23,11 @@
     return null;
   }
   function isTerminal(d){return d.status==='library-reference'||d.status==='reference-only'||d.kind==='library-reference'||d.kind==='generated-reference'||!d.source;}
-  function view(g,start,{direction='out',depth=2,limit=80,libraries=false,grouped=false,pathIds=null}={}){
+  function view(g,start,{direction='out',depth=2,limit=80,libraries=false,grouped=false,pathIds=null,include=()=>true}={}){
     const distance=pathIds?new Map(pathIds.map((id,i)=>[id,i])):walk(g,start,{direction,depth});
-    const eligible=[...distance.keys()].filter(id=>id===start||libraries||!isTerminal(g.cards.get(id)));
+    // Filter declarations before making module groups or aggregating arrows.
+    // The focus stays visible even when its own origin is switched off.
+    const eligible=[...distance.keys()].filter(id=>id===start||((libraries||!isTerminal(g.cards.get(id)))&&include(g.cards.get(id))));
     const allowed=new Set(eligible),edgePairs=[];
     for(const id of eligible)for(const target of g.out.get(id))if(allowed.has(target)&&(!pathIds||pathIds.indexOf(target)===pathIds.indexOf(id)+1))edgePairs.push([id,target]);
     const groups=new Map(),groupOf=new Map();
